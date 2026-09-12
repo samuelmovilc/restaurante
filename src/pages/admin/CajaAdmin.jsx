@@ -1,0 +1,137 @@
+import { useState, useEffect } from 'react'
+import { api, fmt, fmtF, today } from '../../lib/api'
+import { useToast } from '../../hooks/useToast'
+
+export default function CajaAdmin() {
+  const { toast, ToastContainer } = useToast()
+  const [ventas, setVentas]   = useState([])
+  const [stats, setStats]     = useState({})
+  const [loading, setLoading] = useState(true)
+  const [fi, setFi] = useState(today())
+  const [ff, setFf] = useState(today())
+  const [est, setEst] = useState('')
+
+  async function cargar() {
+    setLoading(true)
+    try {
+      const params = { fecha_inicio: fi, fecha_fin: ff }
+      if (est) params.estado = est
+      const [v, s] = await Promise.all([api.getVentas(params), api.getVentaStats(params)])
+      setVentas(v.data || [])
+      setStats(s.data || {})
+    } catch (e) { toast(e.message, 'error') }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => { cargar() }, [])
+
+  async function anular(id, folio) {
+    if (!confirm(`¿Anular la venta ${folio}?`)) return
+    try {
+      await api.anularVenta(id)
+      toast('Venta anulada')
+      cargar()
+    } catch (e) { toast(e.message, 'error') }
+  }
+
+  function exportar() {
+    const url = api.exportarVentas({ fecha_inicio: fi, fecha_fin: ff, ...(est ? { estado: est } : {}) })
+    window.open(url, '_blank')
+  }
+
+  return (
+    <div>
+      <ToastContainer />
+      <div className="page-header">
+        <div><h2>Caja — Historial de ventas</h2></div>
+      </div>
+
+      {/* STATS */}
+      <div className="stats-grid stats-3">
+        <div className="stat-card">
+          <div className="stat-label">Total vendido</div>
+          <div className="stat-value">{fmt(stats.total_vendido)}</div>
+          <div className="stat-sub">{stats.total_ventas} venta{stats.total_ventas !== 1 ? 's' : ''}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Utilidad bruta</div>
+          <div className="stat-value" style={{ color: 'var(--vd)' }}>{fmt(stats.utilidad_bruta)}</div>
+          <div className="stat-sub vd">Precio venta − costo real</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">% Utilidad</div>
+          <div className="stat-value" style={{ color: 'var(--am)' }}>{stats.porcentaje_utilidad || 0}%</div>
+          <div className="stat-sub">Margen real del período</div>
+        </div>
+      </div>
+
+      {/* BARRA FILTROS */}
+      <div className="caja-bar">
+        <div className="filter-group">
+          <label className="filter-label" style={{ color: 'var(--text3)' }}>Fecha inicio</label>
+          <input className="filter-input" type="date" value={fi} onChange={e => setFi(e.target.value)} />
+        </div>
+        <div className="filter-group">
+          <label className="filter-label" style={{ color: 'var(--text3)' }}>Fecha fin</label>
+          <input className="filter-input" type="date" value={ff} onChange={e => setFf(e.target.value)} />
+        </div>
+        <div className="filter-group">
+          <label className="filter-label" style={{ color: 'var(--text3)' }}>Estado</label>
+          <select className="filter-input" value={est} onChange={e => setEst(e.target.value)}>
+            <option value="">Todas</option>
+            <option value="ACEPTADA">Aceptada</option>
+            <option value="ANULADA">Anulada</option>
+          </select>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={cargar}>Actualizar</button>
+        <button className="btn btn-success btn-sm" onClick={exportar}>Exportar Excel</button>
+        <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: 'var(--text3)' }}>
+          Total: {fmt(stats.total_vendido)} · {ventas.length} ventas
+        </span>
+      </div>
+
+      <div className="card">
+        {loading ? (
+          <div style={{ padding: 48, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Folio</th><th>Hora</th><th>Cliente</th><th>Ítems</th><th>Total</th>
+                  <th>Utilidad</th><th>Métodos de pago</th><th>Estado</th><th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ventas.map(v => (
+                  <tr key={v.id}>
+                    <td style={{ fontWeight: 700, color: 'var(--az)', fontSize: 12 }}>{v.folio}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text3)' }}>{v.hora_venta}</td>
+                    <td style={{ fontSize: 12 }}>{v.cliente_nombre || '—'}</td>
+                    <td style={{ color: 'var(--az)', fontSize: 12 }}>{v.items_count || 0} ítem(s)</td>
+                    <td><strong style={{ color: 'var(--am)' }}>{fmt(v.total)}</strong></td>
+                    <td style={{ color: 'var(--vd)', fontWeight: 700, fontSize: 12 }}>{fmt(v.total - v.total_costo)}</td>
+                    <td style={{ fontSize: 11, color: 'var(--text3)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.metodos_pago_str || '—'}</td>
+                    <td>
+                      <span className={`badge ${v.estado === 'ACEPTADA' ? 'badge-green' : 'badge-red'}`}>{v.estado}</span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {v.estado === 'ACEPTADA' && (
+                          <button className="btn btn-danger btn-xs" onClick={() => anular(v.id, v.folio)}>Anular</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {!ventas.length && (
+                  <tr><td colSpan="9" style={{ textAlign: 'center', padding: 28, color: 'var(--text3)', fontSize: 13 }}>Sin ventas en este período</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
