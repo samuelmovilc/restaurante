@@ -309,7 +309,7 @@ tbody tr:hover td { background: rgba(255,255,255,0.025); }
 .sidebar-footer a:hover { color: var(--text); }
 
 /* ─── MAIN CONTENT ──────────────────────────────────── */
-.main-content { margin-left: 220px; min-height: 100vh; padding: 24px 28px; }
+.main-content { margin-left: 220px; min-height: 100vh; padding: 24px 28px; flex: 1; width: calc(100% - 220px); }
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
 .page-header h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
 .page-header p  { font-size: 12px; color: var(--text2); margin-top: 3px; }

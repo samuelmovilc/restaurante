@@ -184,6 +184,10 @@ export default function PedidosAdmin() {
           <p>Gestión de órdenes activas y liquidación.</p>
         </div>
         <div className="page-actions">
+          <button className="btn btn-ghost" onClick={() => cargarPedidos()}>
+            <svg style={{ width: 14, height: 14, fill: 'currentColor' }} viewBox="0 0 16 16"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/><path d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/></svg>
+            Actualizar Data
+          </button>
           <button className="btn btn-dark" onClick={generarComandas} disabled={!selectedIds.length}>
             {selectedIds.length > 1 ? `Generar ${selectedIds.length} comandas` : 'Generar comanda'}
           </button>
@@ -244,7 +248,7 @@ export default function PedidosAdmin() {
         <button className="btn btn-ghost" onClick={() => { setFFecha(today()); setFTipo(''); setFEstado(''); setFOrden('desc'); cargarPedidos({ fecha: today() }) }}>Limpiar</button>
       </div>
 
-      <div className="two-col">
+      <div style={{ width: '100%' }}>
         {/* TABLA */}
         <div className="card">
           <div className="card-header">
@@ -295,18 +299,21 @@ export default function PedidosAdmin() {
             </div>
           )}
         </div>
+      </div>
 
-        {/* DETALLE + LIQUIDACIÓN */}
-        <div className="detail-panel">
-          <div className="detail-header">
-            <div className="detail-header-title">Detalle del pedido</div>
-            <div className="detail-header-sub">{selPedido ? `#${selPedido.numero_pedido} · ${selPedido.nombre_cliente || '—'}` : 'Selecciona un pedido'}</div>
-          </div>
+      {/* DETALLE + LIQUIDACIÓN (MODAL) */}
+      {selPedido && (
+        <div className="modal-overlay" onClick={() => setSelPedido(null)}>
+          <div className="modal-box" style={{ maxWidth: 800, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+            <div className="detail-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div className="detail-header-title">Detalle del pedido</div>
+                <div className="detail-header-sub">#{selPedido.numero_pedido} · {selPedido.nombre_cliente || '—'}</div>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelPedido(null)}>✕ Cerrar</button>
+            </div>
 
-          {!selPedido ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>Ningún pedido seleccionado</div>
-          ) : (
-            <div className="detail-body">
+            <div className="detail-body" style={{ padding: '20px', maxHeight: '70vh', overflowY: 'auto' }}>
               {/* INFO */}
               <div className="detail-section">
                 <div className="detail-section-label">Información</div>
@@ -410,9 +417,9 @@ export default function PedidosAdmin() {
                 </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
