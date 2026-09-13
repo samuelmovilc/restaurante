@@ -4,26 +4,18 @@ import { useToast } from '../hooks/useToast'
 
 const ESTADOS = ['pendiente', 'preparacion']
 
+function getBogotaDate(created_at) {
+  const localStr = (created_at || '').replace('Z', '').replace('T', ' ')
+  let d = new Date(localStr.replace(/-/g, '/'))
+  d.setHours(d.getHours() + 2) // Compensar las 2 horas de atraso del servidor
+  return d
+}
+
 function tiempoDesde(created_at) {
-  // Manejo robusto de fechas para evitar desfases de zona horaria del servidor
-  let d = new Date(created_at);
-  // Si la fecha devuelta por el servidor está en el futuro, o más de 12 horas en el pasado,
-  // puede deberse a un mismatch de zona horaria entre Node y el navegador.
-  // Una forma robusta es forzar la lectura local de la fecha ignorando el 'Z'
-  const localStr = (created_at || '').replace('Z', '').replace('T', ' ');
-  let dLocal = new Date(localStr.replace(/-/g, '/')); // replace - with / for safari support
-  
-  // Usar la fecha local si parece más correcta (menos de 24 horas de diferencia)
-  const diffLocal = Math.floor((Date.now() - dLocal) / 1000);
-  const diffOriginal = Math.floor((Date.now() - d) / 1000);
-  
-  // Seleccionamos la que tenga más sentido (la que no sea negativa y sea más pequeña)
-  let diff = diffOriginal;
-  if (diffLocal >= 0 && (diff < 0 || diffLocal < diff)) {
-    diff = diffLocal;
-  }
-  // Fallback por si acaso: si ambas son negativas, mostrar 0
-  if (diff < 0) diff = 0;
+  let d = getBogotaDate(created_at)
+  let diff = Math.floor((Date.now() - d) / 1000)
+  if (diff < 0) diff = 0
+
 
   const h = Math.floor(diff / 3600)
   const m = Math.floor((diff % 3600) / 60)
@@ -106,7 +98,7 @@ export default function CocinaPage() {
                     <div className="cocina-card-num">{p.num || `#${p.numero_pedido}`}</div>
                     <div className="cocina-card-meta" style={{ marginTop: 4, marginBottom: 2 }}>
                       <span style={{ fontWeight: 700, color: 'var(--text)' }}>
-                        📅 {new Date(p.created_at).toLocaleString('es-CO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        📅 {getBogotaDate(p.created_at).toLocaleString('es-CO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
                     <div className="cocina-card-meta">
