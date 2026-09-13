@@ -128,10 +128,33 @@ export default function PedidosAdmin() {
     setLiquidando(true)
     const total = calcTotal()
     try {
-      const mpsConTipo = mpsSel.map(m => {
+      let mpsConTipo = mpsSel.map(m => {
         const mp = metodosPago.find(x => x.nombre === m.mp) || {}
-        return { nombre: m.mp, tipo: mp.tipo || 'efectivo', monto: parseFloat(m.monto) || total }
+        return { nombre: m.mp, tipo: mp.tipo || 'efectivo', monto: parseFloat(m.monto) || 0 }
       })
+      
+      // Ajustar si el cliente dio billetes más grandes (vueltas) para no inflar la venta
+      let pagado = mpsConTipo.reduce((s, m) => s + m.monto, 0)
+      let cambio = pagado - total
+      if (cambio > 0) {
+        // Restar el cambio del efectivo si es posible
+        let ef = mpsConTipo.find(m => m.tipo === 'efectivo' && m.monto >= cambio)
+        if (ef) {
+          ef.monto -= cambio
+        } else {
+          // O restarlo del que se pueda
+          for (let m of mpsConTipo) {
+            if (m.monto >= cambio) {
+              m.monto -= cambio
+              break
+            } else {
+              cambio -= m.monto
+              m.monto = 0
+            }
+          }
+        }
+      }
+      
       const res = await api.crearVenta({
         pedido_id: selPedido.id,
         cliente_nombre: liqCliente,
