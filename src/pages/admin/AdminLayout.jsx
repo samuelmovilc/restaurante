@@ -31,19 +31,19 @@ export default function AdminLayout() {
   }
 
   return (
-    <div style={{ display: 'flex' }}>
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-logo">
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <header className="topbar">
+        <div className="topbar-brand">
+          <div className="topbar-logo">
             {logoUrl ? <img src={logoUrl} alt="logo" /> : '🍗'}
           </div>
-          <div className="sidebar-brand-text">
+          <div className="topbar-brand-text">
             <h1>{nombre}</h1>
             <p>Panel admin</p>
           </div>
         </div>
 
-        <nav className="sidebar-nav">
+        <nav className="topbar-nav">
           {NAV.map(item => (
             <NavLink
               key={item.to}
@@ -57,28 +57,25 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <div className="sidebar-footer">
-          <div style={{ marginBottom: 10 }}>
-            <a href="/" style={{ color: 'var(--text3)', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-              Formulario pedidos
-            </a>
-          </div>
-          <div style={{ marginBottom: 10 }}>
-            <a href="/cocina" style={{ color: 'var(--text3)', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-              🍳 Vista cocina
-            </a>
-          </div>
+        <div className="topbar-user">
+          <a href="/" style={{ color: 'var(--text3)', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Pedidos
+          </a>
+          <a href="/cocina" style={{ color: 'var(--text3)', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+            🍳 Cocina
+          </a>
           {usuario && (
-            <div style={{ paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-              <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 6 }}>{usuario.nombre}</div>
-              <button className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'center' }} onClick={handleLogout}>
-                Cerrar sesión
+            <>
+              <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
+              <div className="topbar-user-name">{usuario.nombre}</div>
+              <button className="btn btn-ghost btn-sm" onClick={handleLogout}>
+                Salir
               </button>
-            </div>
+            </>
           )}
         </div>
-      </aside>
+      </header>
 
       <main className="main-content">
         <Outlet />
@@ -86,3 +83,4 @@ export default function AdminLayout() {
     </div>
   )
 }
+

@@ -151,7 +151,7 @@ export default function PedidosAdmin() {
 
   function generarComandas() {
     const sel = pedidos.filter(p => selectedIds.includes(p.id))
-    if (!sel.length) return toast('Selecciona al menos un pedido', 'error')
+    if (!sel.length) return toast('Por favor selecciona al menos un pedido para imprimir la comanda', 'error')
     const txt = sel.map(p => {
       const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
       return [
@@ -248,46 +248,82 @@ export default function PedidosAdmin() {
         <button className="btn btn-ghost" onClick={() => { setFFecha(today()); setFTipo(''); setFEstado(''); setFOrden('desc'); cargarPedidos({ fecha: today() }) }}>Limpiar</button>
       </div>
 
-      <div style={{ width: '100%' }}>
-        {/* TABLA */}
-        <div className="card">
+      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+        {/* TABLA DE PEDIDOS */}
+        <div className="card" style={{ flex: 1, minWidth: 0 }}>
           <div className="card-header">
-            <div><h3>Órdenes</h3><p>{pedidos.length} resultado{pedidos.length !== 1 ? 's' : ''}</p></div>
+            <div><h3>Órdenes activas</h3><p>{pedidos.length} resultado{pedidos.length !== 1 ? 's' : ''}</p></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { window.print() }}>Imprimir seleccionados</button>
           </div>
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
           ) : (
-            <div className="table-wrap">
-              <table>
+            <div className="table-wrap" style={{ overflowX: 'auto' }}>
+              <table style={{ minWidth: 1000 }}>
                 <thead>
                   <tr>
                     <th style={{ width: 32 }}>
                       <input type="checkbox" onChange={e => setSelectedIds(e.target.checked ? pedidos.map(p => p.id) : [])} />
                     </th>
-                    <th>Pedido</th><th>Hora</th><th>Cliente</th><th>Tipo</th><th>Estado</th><th>Total</th><th></th>
+                    <th>Pedido</th>
+                    <th>Fecha / Hora</th>
+                    <th>Cliente</th>
+                    <th>Mesa</th>
+                    <th>Mesero</th>
+                    <th>Productos</th>
+                    <th>Obs.</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pedidos.map(p => {
                     const e = EST_MAP[p.estado] || EST_MAP.pendiente
+                    const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
+                    const resumenProductos = items.map(it => `${it.cantidad}x ${it.nombre_producto}`).join(', ')
+                    const d = new Date(p.created_at)
                     return (
-                      <tr key={p.id} onClick={() => verDetalle(p)} style={{ cursor: 'pointer' }}>
+                      <tr key={p.id} onClick={() => verDetalle(p)} style={{ cursor: 'pointer', background: selPedido?.id === p.id ? 'var(--bg-hover)' : 'transparent' }}>
                         <td onClick={ev => ev.stopPropagation()}>
                           <input type="checkbox" checked={selectedIds.includes(p.id)} onChange={ev => setSelectedIds(prev => ev.target.checked ? [...prev, p.id] : prev.filter(x => x !== p.id))} />
                         </td>
                         <td><strong>#{p.numero_pedido}</strong></td>
-                        <td style={{ color: 'var(--text3)', fontSize: 12 }}>{new Date(p.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</td>
+                        <td style={{ color: 'var(--text3)', fontSize: 11 }}>
+                          {d.toLocaleDateString('es-CO')}<br/>
+                          <strong>{d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</strong>
+                        </td>
                         <td>{p.nombre_cliente || '—'}</td>
-                        <td><span className="badge badge-gray">{TIPO_LABEL[p.tipo_pedido]}{p.mesa_nombre ? ' · ' + p.mesa_nombre : ''}</span></td>
+                        <td>{p.mesa_nombre || <span style={{ color: 'var(--text3)', fontSize: 11 }}>{TIPO_LABEL[p.tipo_pedido]}</span>}</td>
+                        <td style={{ fontSize: 11 }}>{p.vendedor_nombre || 'Admin'}</td>
+                        <td style={{ fontSize: 11, maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={resumenProductos}>
+                          {resumenProductos || '—'}
+                        </td>
+                        <td style={{ fontSize: 11, maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.observaciones}>
+                          {p.observaciones || '—'}
+                        </td>
+                        <td><strong>{fmt(p.total)}</strong></td>
                         <td onClick={ev => ev.stopPropagation()}>
                           <select value={p.estado} onChange={ev => cambiarEstado(p.id, ev.target.value)}
-                            style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '4px 7px', fontSize: 12, fontFamily: 'inherit', cursor: 'pointer' }}>
+                            style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '4px 7px', fontSize: 12, fontFamily: 'inherit', cursor: 'pointer', width: 110 }}>
                             {Object.entries(EST_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                           </select>
                         </td>
-                        <td><strong>{fmt(p.total)}</strong></td>
-                        <td><button className="btn btn-ghost btn-xs" onClick={ev => { ev.stopPropagation(); verDetalle(p) }}>Ver</button></td>
+                        <td onClick={ev => ev.stopPropagation()}>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <button className="btn btn-ghost btn-xs" style={{ padding: '4px 6px' }} onClick={() => {
+                              if (p.estado !== 'entregado') {
+                                toast('⚠️ Por favor, liquida el pedido en el carrito primero antes de imprimir.', 'error', 4000)
+                                verDetalle(p)
+                              } else {
+                                const w = window.open('', '_blank', 'width=400,height=600')
+                                w.document.write(`<pre style="font-family:monospace;font-size:13px;padding:20px">FACTURA DE VENTA\n\nPedido #${p.numero_pedido}\nTotal: ${fmt(p.total)}\n...</pre>`)
+                                w.print()
+                              }
+                            }}>🖨️ Factura</button>
+                            <button className="btn btn-ghost btn-xs" style={{ padding: '4px 6px' }} onClick={() => verDetalle(p)}>✏️ Editar</button>
+                          </div>
+                        </td>
                       </tr>
                     )
                   })}
@@ -299,33 +335,36 @@ export default function PedidosAdmin() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* DETALLE + LIQUIDACIÓN (MODAL) */}
-      {selPedido && (
-        <div className="modal-overlay" onClick={() => setSelPedido(null)}>
-          <div className="modal-box" style={{ maxWidth: 800, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-            <div className="detail-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div className="detail-header-title">Detalle del pedido</div>
-                <div className="detail-header-sub">#{selPedido.numero_pedido} · {selPedido.nombre_cliente || '—'}</div>
-              </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setSelPedido(null)}>✕ Cerrar</button>
+        {/* PANEL LATERAL DE DETALLE (EL CARRITO SIEMPRE VISIBLE) */}
+        <div className="card" style={{ width: 440, flexShrink: 0, position: 'sticky', top: 84, minHeight: 600 }}>
+          {!selPedido ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 40, color: 'var(--text3)', textAlign: 'center' }}>
+              <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.5 }}>🛒</div>
+              <h3 style={{ fontSize: 16, color: 'var(--text2)', marginBottom: 8 }}>Carrito vacío</h3>
+              <p style={{ fontSize: 12 }}>Haz clic en cualquier pedido de la tabla a la izquierda para cargar sus datos aquí, editar sus productos o proceder con la liquidación.</p>
             </div>
+          ) : (
+            <>
+              <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ fontSize: 18 }}>Pedido #{selPedido.numero_pedido}</h3>
+                  <p>{selPedido.nombre_cliente || '—'} · {TIPO_LABEL[selPedido.tipo_pedido]}</p>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={() => setSelPedido(null)}>✕ Cerrar</button>
+              </div>
 
-            <div className="detail-body" style={{ padding: '20px', maxHeight: '70vh', overflowY: 'auto' }}>
-              {/* INFO */}
-              <div className="detail-section">
-                <div className="detail-section-label">Información</div>
-                {[
-                  ['Pedido', `#${selPedido.numero_pedido}`],
-                  ['Estado', <span className={`badge ${EST_MAP[selPedido.estado]?.cls}`}>{EST_MAP[selPedido.estado]?.label}</span>],
-                  ['Cliente', selPedido.nombre_cliente || '—'],
-                  ['Tipo', `${TIPO_LABEL[selPedido.tipo_pedido]}${selPedido.mesa_nombre ? ' · ' + selPedido.mesa_nombre : ''}`],
-                  ['Hora', new Date(selPedido.created_at).toLocaleTimeString('es-CO')],
-                ].map(([k, v]) => (
-                  <div key={k} className="detail-row"><span>{k}</span><span>{v}</span></div>
-                ))}
+            <div className="card-body" style={{ maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
+              {/* ESTADO */}
+              <div className="detail-section" style={{ marginBottom: 16 }}>
+                <div className="detail-section-label">Estado actual</div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <span className={`badge ${EST_MAP[selPedido.estado]?.cls}`} style={{ fontSize: 14, padding: '6px 12px' }}>{EST_MAP[selPedido.estado]?.label}</span>
+                  <div style={{ fontSize: 11, color: 'var(--text3)' }}>
+                    Hora: {new Date(selPedido.created_at).toLocaleTimeString('es-CO')}<br/>
+                    Mesa: {selPedido.mesa_nombre || 'N/A'}
+                  </div>
+                </div>
               </div>
 
               {/* PRODUCTOS EDITABLES */}
@@ -371,64 +410,79 @@ export default function PedidosAdmin() {
                 <span>Total</span><span style={{ color: 'var(--am)' }}>{fmt(calcTotal())}</span>
               </div>
 
-              <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: 14 }} onClick={actualizarPedido} disabled={guardando}>
+              <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: 14 }} onClick={actualizarPedido} disabled={guardando || selPedido.estado === 'entregado'}>
                 {guardando ? 'Guardando...' : 'Actualizar pedido'}
               </button>
 
               {/* LIQUIDACIÓN SIMPLIFICADA */}
-              <div className="liq-section" style={{ background: 'var(--bg2)', padding: '16px 20px', borderRadius: 12, border: '1px solid var(--border)', marginTop: 24 }}>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase' }}>Total</span>
-                  <span style={{ fontSize: 24, fontWeight: 900, color: '#3B82F6' }}>{fmt(calcTotal())}</span>
+              {selPedido.estado === 'entregado' ? (
+                <div style={{ padding: '20px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: 12, textAlign: 'center', marginTop: 20 }}>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>✅</div>
+                  <h4 style={{ color: '#15803d', fontWeight: 800, marginBottom: 4 }}>VENTA FACTURADA</h4>
+                  <p style={{ fontSize: 12, color: 'var(--text2)' }}>Este pedido ya fue liquidado. No se pueden modificar los métodos de pago para evitar doble facturación.</p>
                 </div>
+              ) : selPedido.estado === 'cancelado' ? (
+                <div style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12, textAlign: 'center', marginTop: 20 }}>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>❌</div>
+                  <h4 style={{ color: '#b91c1c', fontWeight: 800, marginBottom: 4 }}>PEDIDO ANULADO</h4>
+                  <p style={{ fontSize: 12, color: 'var(--text2)' }}>Este pedido fue cancelado y no puede ser facturado.</p>
+                </div>
+              ) : (
+                <div className="liq-section" style={{ background: 'var(--bg2)', padding: '16px 20px', borderRadius: 12, border: '1px solid var(--border)', marginTop: 24 }}>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase' }}>Total a pagar</span>
+                    <span style={{ fontSize: 24, fontWeight: 900, color: '#3B82F6' }}>{fmt(calcTotal())}</span>
+                  </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase' }}>Métodos de pago</span>
-                  <button className="btn btn-ghost btn-xs" style={{ color: '#3B82F6', fontWeight: 700 }} onClick={() => setLiqMPs(prev => [...prev, { mp: '', monto: '' }])}>
-                    + Agregar
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase' }}>Métodos de pago</span>
+                    <button className="btn btn-ghost btn-xs" style={{ color: '#3B82F6', fontWeight: 700 }} onClick={() => setLiqMPs(prev => [...prev, { mp: '', monto: '' }])}>
+                      + Agregar
+                    </button>
+                  </div>
+
+                  {liqMPs.map((mp, i) => (
+                    <div key={i} className="mp-row" style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                      <select className="input" style={{ flex: 1, padding: '8px 10px', fontSize: 13 }} value={mp.mp} onChange={e => setLiqMPs(prev => prev.map((x, j) => j === i ? { ...x, mp: e.target.value } : x))}>
+                        <option value="">— Seleccionar —</option>
+                        {metodosPago.filter(m => m.activo).map(m => <option key={m.id} value={m.nombre}>{m.nombre}</option>)}
+                      </select>
+                      <input className="input" type="number" placeholder="Monto" style={{ width: 130, textAlign: 'right', padding: '8px 10px', fontSize: 13 }} value={mp.monto} onChange={e => setLiqMPs(prev => prev.map((x, j) => j === i ? { ...x, monto: e.target.value } : x))} />
+                      <button className="btn btn-danger btn-icon" style={{ width: 36, height: 36, padding: 0, background: 'rgba(239,68,68,0.1)' }} onClick={() => setLiqMPs(prev => prev.filter((_, j) => j !== i))}>×</button>
+                    </div>
+                  ))}
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: 12, alignItems: 'center', marginTop: 16, marginBottom: 8 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Cliente</label>
+                    <input className="input" style={{ padding: '8px 12px' }} value={liqCliente} onChange={e => setLiqCliente(e.target.value)} />
+                    
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Obs.</label>
+                    <input className="input" style={{ padding: '8px 12px' }} placeholder="Observaciones..." value={liqObs} onChange={e => setLiqObs(e.target.value)} />
+                    
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Paga con</label>
+                    <input className="input" type="number" style={{ padding: '8px 12px' }} value={liqPagaCon || ''} onChange={e => setLiqPagaCon(parseFloat(e.target.value) || 0)} />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', padding: '12px 16px', borderRadius: 8, marginTop: 16, marginBottom: 16 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                      {liqPagaCon > 0 ? 'Cambio / Vueltas' : ((calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0)) > 0 ? 'Saldo Faltante' : 'Cambio / Vueltas')}
+                    </span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#3B82F6' }}>
+                      {fmt(liqPagaCon > 0 ? Math.max(0, liqPagaCon - calcTotal()) : Math.abs(calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0)))}
+                    </span>
+                  </div>
+
+                  <button className="btn btn-success btn-lg" style={{ width: '100%', fontSize: 15, fontWeight: 800, padding: 14, letterSpacing: '1px' }} onClick={liquidar} disabled={liquidando}>
+                    {liquidando ? 'Procesando...' : '✓ PAGAR Y LIQUIDAR'}
                   </button>
                 </div>
-
-                {liqMPs.map((mp, i) => (
-                  <div key={i} className="mp-row" style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                    <select className="input" style={{ flex: 1, padding: '8px 10px', fontSize: 13 }} value={mp.mp} onChange={e => setLiqMPs(prev => prev.map((x, j) => j === i ? { ...x, mp: e.target.value } : x))}>
-                      <option value="">— Seleccionar —</option>
-                      {metodosPago.filter(m => m.activo).map(m => <option key={m.id} value={m.nombre}>{m.nombre}</option>)}
-                    </select>
-                    <input className="input" type="number" placeholder="Monto" style={{ width: 130, textAlign: 'right', padding: '8px 10px', fontSize: 13 }} value={mp.monto} onChange={e => setLiqMPs(prev => prev.map((x, j) => j === i ? { ...x, monto: e.target.value } : x))} />
-                    <button className="btn btn-danger btn-icon" style={{ width: 36, height: 36, padding: 0, background: 'rgba(239,68,68,0.1)' }} onClick={() => setLiqMPs(prev => prev.filter((_, j) => j !== i))}>×</button>
-                  </div>
-                ))}
-
-                <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: 12, alignItems: 'center', marginTop: 16, marginBottom: 8 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Cliente</label>
-                  <input className="input" style={{ padding: '8px 12px' }} value={liqCliente} onChange={e => setLiqCliente(e.target.value)} />
-                  
-                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Obs.</label>
-                  <input className="input" style={{ padding: '8px 12px' }} placeholder="Observaciones..." value={liqObs} onChange={e => setLiqObs(e.target.value)} />
-                  
-                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Paga con</label>
-                  <input className="input" type="number" style={{ padding: '8px 12px' }} value={liqPagaCon || ''} onChange={e => setLiqPagaCon(parseFloat(e.target.value) || 0)} />
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', padding: '12px 16px', borderRadius: 8, marginTop: 16, marginBottom: 16 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-                    {liqPagaCon > 0 ? 'Cambio / Vueltas' : ((calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0)) > 0 ? 'Saldo Faltante' : 'Cambio / Vueltas')}
-                  </span>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: '#3B82F6' }}>
-                    {fmt(liqPagaCon > 0 ? Math.max(0, liqPagaCon - calcTotal()) : Math.abs(calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0)))}
-                  </span>
-                </div>
-
-                <button className="btn btn-success btn-lg" style={{ width: '100%', fontSize: 15, fontWeight: 800, padding: 14, letterSpacing: '1px' }} onClick={liquidar} disabled={liquidando}>
-                  {liquidando ? 'Procesando...' : '✓ PAGAR'}
-                </button>
-              </div>
+              )}
             </div>
-          </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
