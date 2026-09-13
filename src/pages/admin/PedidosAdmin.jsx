@@ -254,6 +254,7 @@ export default function PedidosAdmin() {
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
           ) : (
+            <div className="table-wrap" style={{ overflowX: 'auto' }}>
               <table style={{ minWidth: 1000, borderSpacing: 0, borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
