@@ -21,7 +21,6 @@ export default function PedidosAdmin() {
   const [liqMPs, setLiqMPs]           = useState([{ mp: '', monto: '' }])
   const [liqCliente, setLiqCliente]   = useState('')
   const [liqObs, setLiqObs]           = useState('')
-  const [liqPagaCon, setLiqPagaCon]   = useState(0)
   const [guardando, setGuardando]     = useState(false)
   const [liquidando, setLiquidando]   = useState(false)
   const prodSearchRef = useRef(null)
@@ -61,8 +60,6 @@ export default function PedidosAdmin() {
     setObsEdit(ped.observaciones || '')
     setLiqCliente(ped.nombre_cliente || '')
     setLiqObs(ped.observaciones || '')
-    const t = items.reduce((s, it) => s + it.precio_unitario * it.cantidad, 0)
-    setLiqPagaCon(t)
     setLiqMPs([{ mp: '', monto: '' }])
   }
 
@@ -240,8 +237,6 @@ export default function PedidosAdmin() {
     w.document.write(`<pre style="font-family:monospace;font-size:13px;padding:20px">${txt}</pre>`)
     w.print()
   }
-
-  const faltante = liqPagaCon - calcTotal()
 
   return (
     <div>
@@ -526,7 +521,7 @@ export default function PedidosAdmin() {
                         <option value="">— Seleccionar —</option>
                         {metodosPago.filter(m => m.activo).map(m => <option key={m.id} value={m.nombre}>{m.nombre}</option>)}
                       </select>
-                      <input className="input" type="number" placeholder="Monto" style={{ width: 130, textAlign: 'right', padding: '8px 10px', fontSize: 13 }} value={mp.monto} onChange={e => setLiqMPs(prev => prev.map((x, j) => j === i ? { ...x, monto: e.target.value } : x))} />
+                      <input className="input" type="text" placeholder="Monto" style={{ width: 130, textAlign: 'right', padding: '8px 10px', fontSize: 13 }} value={mp.monto ? new Intl.NumberFormat('es-CO').format(mp.monto) : ''} onChange={e => { const raw = e.target.value.replace(/\D/g, ''); setLiqMPs(prev => prev.map((x, j) => j === i ? { ...x, monto: raw } : x)); }} />
                       <button className="btn btn-danger btn-icon" style={{ width: 36, height: 36, padding: 0, background: 'rgba(239,68,68,0.1)' }} onClick={() => setLiqMPs(prev => prev.filter((_, j) => j !== i))}>×</button>
                     </div>
                   ))}
@@ -537,45 +532,30 @@ export default function PedidosAdmin() {
                     
                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Obs.</label>
                     <input className="input" style={{ padding: '8px 12px' }} placeholder="Observaciones..." value={liqObs} onChange={e => setLiqObs(e.target.value)} />
-                    
-                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Paga con</label>
-                    <input className="input" type="number" style={{ padding: '8px 12px' }} value={liqPagaCon || ''} onChange={e => setLiqPagaCon(parseFloat(e.target.value) || 0)} />
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', padding: '12px 16px', borderRadius: 8, marginTop: 16, marginBottom: 16 }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
                       {(() => {
                         const faltante = calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0);
-                        if (faltante > 0) {
-                          if (liqPagaCon > 0) return (liqPagaCon - faltante >= 0) ? 'Cambio / Vueltas' : 'Faltante';
-                          return 'Faltante';
-                        }
+                        if (faltante > 0) return 'Faltante';
                         return 'Cambio / Vueltas';
                       })()}
                     </span>
                     <span style={{ fontSize: 18, fontWeight: 800, color: (() => {
                         const faltante = calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0);
-                        if (faltante > 0) {
-                          if (liqPagaCon > 0) return (liqPagaCon - faltante >= 0) ? '#10B981' : '#EF4444';
-                          return '#EF4444';
-                        }
+                        if (faltante > 0) return '#EF4444';
                         return '#10B981';
                       })() }}>
                       {(() => {
                         const faltante = calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0);
-                        if (faltante > 0) {
-                          if (liqPagaCon > 0) {
-                             const cambio = liqPagaCon - faltante;
-                             return fmt(cambio);
-                          }
-                          return fmt(-faltante);
-                        }
+                        if (faltante > 0) return fmt(-faltante);
                         return fmt(Math.abs(faltante));
                       })()}
                     </span>
                   </div>
 
-                  <button className="btn btn-success btn-lg" style={{ width: '100%', fontSize: 15, fontWeight: 800, padding: 14, letterSpacing: '1px' }} onClick={liquidar} disabled={liquidando}>
+                  <button className="btn btn-success btn-lg" style={{ width: '100%', fontSize: 15, fontWeight: 800, padding: 14, letterSpacing: '1px' }} onClick={liquidar} disabled={liquidando || (calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0)) > 0}>
                     {liquidando ? 'Procesando...' : '✓ PAGAR Y LIQUIDAR'}
                   </button>
                 </div>
