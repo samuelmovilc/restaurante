@@ -25,9 +25,13 @@ function tiempoDesde(created_at) {
   // Fallback por si acaso: si ambas son negativas, mostrar 0
   if (diff < 0) diff = 0;
 
-  const m = Math.floor(diff / 60)
+  const h = Math.floor(diff / 3600)
+  const m = Math.floor((diff % 3600) / 60)
   const s = diff % 60
-  return { texto: `${m}:${String(s).padStart(2,'0')}`, minutos: m }
+  const texto = h > 0 
+      ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` 
+      : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+  return { texto, minutos: Math.floor(diff / 60) }
 }
 
 function useTick() {
@@ -100,13 +104,18 @@ export default function CocinaPage() {
                 <div className="cocina-card-header">
                   <div>
                     <div className="cocina-card-num">{p.num || `#${p.numero_pedido}`}</div>
+                    <div className="cocina-card-meta" style={{ marginTop: 4, marginBottom: 2 }}>
+                      <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                        📅 {new Date(p.created_at).toLocaleString('es-CO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
                     <div className="cocina-card-meta">
                       {TIPO_LABEL[p.tipo_pedido]} {p.mesa_nombre || p.tipo_pedido}  ·  {p.nombre_cliente}
                     </div>
                   </div>
-                  <div>
-                    <div className={`cocina-card-time ${timeClass}`}>{texto}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'right', marginTop: 2 }}>min</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: 0.5, marginBottom: 2 }}>Tiempo transcurrido</div>
+                    <div className={`cocina-card-time ${timeClass}`} style={{ fontSize: 20, letterSpacing: '1px' }}>{texto}</div>
                   </div>
                 </div>
 
