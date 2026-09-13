@@ -148,6 +148,74 @@ export default function PedidosAdmin() {
     } catch (e) { toast(e.message, 'error') }
     finally { setLiquidando(false) }
   }
+  function imprimirFactura(p) {
+    const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
+    let html = `
+      <html>
+        <head>
+          <style>
+            @media print { 
+              @page { margin: 0; } 
+              body { margin: 10px; } 
+            }
+            body { font-family: 'Courier New', Courier, monospace; width: 300px; margin: 0 auto; padding: 20px 10px; color: #000; }
+            h1 { text-align: center; font-size: 20px; margin: 0 0 5px 0; font-family: sans-serif; text-transform: uppercase; font-weight: 900; }
+            .subtitle { text-align: center; font-size: 13px; margin-bottom: 20px; font-family: sans-serif; font-weight: bold; letter-spacing: 1px; }
+            .info { font-size: 12px; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+            .info div { margin-bottom: 4px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 15px; }
+            th { text-align: left; border-bottom: 1px dashed #000; padding-bottom: 6px; text-transform: uppercase; }
+            td { padding: 6px 0; vertical-align: top; }
+            .qty { width: 35px; }
+            .price { text-align: right; width: 80px; }
+            .totals { font-size: 13px; font-weight: bold; border-top: 1px dashed #000; padding-top: 10px; margin-bottom: 20px; }
+            .totals div { display: flex; justify-content: space-between; margin-bottom: 5px; }
+            .totals .grand-total { font-size: 18px; margin-top: 10px; padding-top: 10px; border-top: 2px solid #000; font-family: sans-serif; font-weight: 900; }
+            .footer { text-align: center; font-size: 12px; margin-top: 30px; font-family: sans-serif; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <h1>Factura de Venta</h1>
+          <div class="subtitle">Orden #${p.numero_pedido}</div>
+          <div class="info">
+            <div><b>Fecha:</b> ${new Date(p.created_at).toLocaleString('es-CO')}</div>
+            <div><b>Cliente:</b> ${p.nombre_cliente || 'Mostrador'}</div>
+            ${p.mesa_nombre ? `<div><b>Mesa:</b> ${p.mesa_nombre}</div>` : ''}
+            <div><b>Tipo:</b> ${p.tipo_pedido.toUpperCase()}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th class="qty">Cant</th>
+                <th>Producto</th>
+                <th class="price">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map(it => `
+                <tr>
+                  <td class="qty">${it.cantidad}</td>
+                  <td>${it.nombre_producto}</td>
+                  <td class="price">${fmt(it.cantidad * (parseFloat(it.precio) || 0))}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="totals">
+            <div class="grand-total"><span>TOTAL</span><span>${fmt(p.total)}</span></div>
+          </div>
+          <div class="footer">
+            ¡Gracias por su compra!<br>
+            Vuelva pronto
+          </div>
+        </body>
+      </html>
+    `
+    const w = window.open('', '_blank', 'width=400,height=600')
+    w.document.write(html)
+    w.document.close()
+    setTimeout(() => { w.print(); w.close(); }, 500)
+  }
 
   function generarComandas() {
     const sel = pedidos.filter(p => selectedIds.includes(p.id))
@@ -313,9 +381,7 @@ export default function PedidosAdmin() {
                                 toast('⚠️ Por favor, liquida el pedido en el carrito primero antes de imprimir.', 'error', 4000)
                                 verDetalle(p)
                               } else {
-                                const w = window.open('', '_blank', 'width=400,height=600')
-                                w.document.write(`<pre style="font-family:monospace;font-size:13px;padding:20px">FACTURA DE VENTA\n\nPedido #${p.numero_pedido}\nTotal: ${fmt(p.total)}\n...</pre>`)
-                                w.print()
+                                imprimirFactura(p)
                               }
                             }}>🖨️ Factura</button>
                             <button className="btn btn-ghost btn-xs" style={{ padding: '4px 8px', color: 'var(--am)' }} onClick={() => verDetalle(p)}>✏️ Editar</button>
@@ -444,9 +510,12 @@ export default function PedidosAdmin() {
                     <span style={{ fontSize: 24, fontWeight: 900, color: '#3B82F6' }}>{fmt(calcTotal())}</span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase' }}>Métodos de pago</span>
-                    <button className="btn btn-ghost btn-xs" style={{ color: '#3B82F6', fontWeight: 700 }} onClick={() => setLiqMPs(prev => [...prev, { mp: '', monto: '' }])}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase' }}>Métodos de pago</label>
+                    <button className="btn btn-ghost btn-sm" onClick={() => {
+                      const faltante = calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0);
+                      setLiqMPs([...liqMPs, { mp: '', monto: faltante > 0 ? faltante : '' }])
+                    }}>
                       + Agregar
                     </button>
                   </div>
@@ -475,10 +544,34 @@ export default function PedidosAdmin() {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', padding: '12px 16px', borderRadius: 8, marginTop: 16, marginBottom: 16 }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-                      {liqPagaCon > 0 ? 'Cambio / Vueltas' : ((calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0)) > 0 ? 'Saldo Faltante' : 'Cambio / Vueltas')}
+                      {(() => {
+                        const faltante = calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0);
+                        if (faltante > 0) {
+                          if (liqPagaCon > 0) return (liqPagaCon - faltante >= 0) ? 'Cambio / Vueltas' : 'Faltante';
+                          return 'Faltante';
+                        }
+                        return 'Cambio / Vueltas';
+                      })()}
                     </span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: '#3B82F6' }}>
-                      {fmt(liqPagaCon > 0 ? Math.max(0, liqPagaCon - calcTotal()) : Math.abs(calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0)))}
+                    <span style={{ fontSize: 18, fontWeight: 800, color: (() => {
+                        const faltante = calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0);
+                        if (faltante > 0) {
+                          if (liqPagaCon > 0) return (liqPagaCon - faltante >= 0) ? '#10B981' : '#EF4444';
+                          return '#EF4444';
+                        }
+                        return '#10B981';
+                      })() }}>
+                      {(() => {
+                        const faltante = calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0);
+                        if (faltante > 0) {
+                          if (liqPagaCon > 0) {
+                             const cambio = liqPagaCon - faltante;
+                             return fmt(cambio);
+                          }
+                          return fmt(-faltante);
+                        }
+                        return fmt(Math.abs(faltante));
+                      })()}
                     </span>
                   </div>
 
