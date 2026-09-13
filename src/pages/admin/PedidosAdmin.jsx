@@ -34,6 +34,7 @@ export default function PedidosAdmin() {
   const [fTipo, setFTipo]     = useState('')
   const [fEstado, setFEstado] = useState('')
   const [fOrden, setFOrden]   = useState('desc')
+  const [fTexto, setFTexto]   = useState('')
 
   async function cargarPedidos(params = {}) {
     setLoading(true)
@@ -261,6 +262,14 @@ export default function PedidosAdmin() {
     w.print()
   }
 
+  const txtLow = fTexto.toLowerCase().trim()
+  const pedidosFiltrados = pedidos.filter(p => {
+    if (!txtLow) return true
+    const n = String(p.numero_pedido || '').toLowerCase()
+    const c = String(p.nombre_cliente || '').toLowerCase()
+    return n.includes(txtLow) || c.includes(txtLow)
+  })
+
   return (
     <div>
       <ToastContainer />
@@ -276,10 +285,10 @@ export default function PedidosAdmin() {
           {/* STATS */}
           <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
             {[
-              { label: 'Pedidos abiertos', value: pedidos.filter(p => ['pendiente','preparacion','listo'].includes(p.estado)).length, sub: 'Activos hoy' },
-              { label: 'Total hoy', value: fmt(pedidos.filter(p => p.estado === 'entregado').reduce((s,p) => s + parseFloat(p.total||0), 0)), sub: 'Ventas del día' },
-              { label: 'Ticket promedio', value: (() => { const e = pedidos.filter(p=>p.estado==='entregado'); return e.length ? fmt(e.reduce((s,p)=>s+parseFloat(p.total||0),0)/e.length) : '$0' })(), sub: 'Por pedido' },
-              { label: 'Total pedidos', value: pedidos.length, sub: 'En el filtro' },
+              { label: 'Pedidos abiertos', value: pedidosFiltrados.filter(p => ['pendiente','preparacion','listo'].includes(p.estado)).length, sub: 'Activos hoy' },
+              { label: 'Total hoy', value: fmt(pedidosFiltrados.filter(p => p.estado === 'entregado').reduce((s,p) => s + parseFloat(p.total||0), 0)), sub: 'Ventas del día' },
+              { label: 'Ticket promedio', value: (() => { const e = pedidosFiltrados.filter(p=>p.estado==='entregado'); return e.length ? fmt(e.reduce((s,p)=>s+parseFloat(p.total||0),0)/e.length) : '$0' })(), sub: 'Por pedido' },
+              { label: 'Total pedidos', value: pedidosFiltrados.length, sub: 'En el filtro' },
             ].map((s, i) => (
               <div key={i} className="stat-card" style={{ minWidth: 160 }}>
                 <div className="stat-label">{s.label}</div>
@@ -323,8 +332,12 @@ export default function PedidosAdmin() {
                 <option value="asc">Más antiguo</option>
               </select>
             </div>
-            <button className="btn" style={{ background: 'var(--am)', color: 'var(--bg)', fontWeight: 700 }} onClick={() => cargarPedidos()}>Buscar</button>
-            <button className="btn btn-ghost" onClick={() => { setFFecha(today()); setFTipo(''); setFEstado(''); setFOrden('desc'); cargarPedidos({ fecha: today() }) }}>Limpiar</button>
+            <div className="filter-group">
+              <label className="filter-label">Buscar (# o Cliente)</label>
+              <input className="filter-input" type="text" placeholder="Ej: 1054 o María" value={fTexto} onChange={e => setFTexto(e.target.value)} />
+            </div>
+            <button className="btn" style={{ background: 'var(--am)', color: 'var(--bg)', fontWeight: 700 }} onClick={() => cargarPedidos()}>Refrescar</button>
+            <button className="btn btn-ghost" onClick={() => { setFFecha(today()); setFTipo(''); setFEstado(''); setFOrden('desc'); setFTexto(''); cargarPedidos({ fecha: today() }) }}>Limpiar</button>
             
             <div style={{ flex: 1 }} />
             <button className="btn btn-dark" style={{ padding: '8px 20px' }} onClick={generarComandas} disabled={!selectedIds.length}>
@@ -335,7 +348,7 @@ export default function PedidosAdmin() {
           {/* TABLA DE PEDIDOS */}
           <div className="card">
           <div className="card-header">
-            <div><h3>Órdenes activas</h3><p>{pedidos.length} resultado{pedidos.length !== 1 ? 's' : ''}</p></div>
+            <div><h3>Órdenes activas</h3><p>{pedidosFiltrados.length} resultado{pedidosFiltrados.length !== 1 ? 's' : ''}</p></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { window.print() }}>Imprimir seleccionados</button>
           </div>
           {loading ? (
@@ -346,7 +359,7 @@ export default function PedidosAdmin() {
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
                     <th style={{ width: 32, padding: '12px 16px' }}>
-                      <input type="checkbox" onChange={e => setSelectedIds(e.target.checked ? pedidos.map(p => p.id) : [])} />
+                      <input type="checkbox" onChange={e => setSelectedIds(e.target.checked ? pedidosFiltrados.map(p => p.id) : [])} />
                     </th>
                     <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Pedido</th>
                     <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Fecha / Hora</th>
@@ -361,7 +374,7 @@ export default function PedidosAdmin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {pedidos.map(p => {
+                  {pedidosFiltrados.map(p => {
                     const e = EST_MAP[p.estado] || EST_MAP.pendiente
                     const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
                     const resumenProductos = items.map(it => `${it.cantidad}x ${it.nombre_producto}`).join(', ')
@@ -408,7 +421,7 @@ export default function PedidosAdmin() {
                       </tr>
                     )
                   })}
-                  {!pedidos.length && (
+                  {!pedidosFiltrados.length && (
                     <tr><td colSpan="8" style={{ textAlign: 'center', padding: 28, color: 'var(--text3)', fontSize: 13 }}>Sin pedidos</td></tr>
                   )}
                 </tbody>
