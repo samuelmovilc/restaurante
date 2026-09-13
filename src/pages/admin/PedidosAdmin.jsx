@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { jsPDF } from 'jspdf'
 import { api, fmt, fmtF, today } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
 
@@ -7,6 +8,7 @@ const EST_MAP = {
   preparacion: { label: 'En preparación', cls: 'badge-yellow' },
   listo:       { label: 'Listo',          cls: 'badge-blue'   },
   entregado:   { label: 'Entregado',      cls: 'badge-green'  },
+  liquidado:   { label: 'Liquidado',      cls: 'badge-purple' },
   cancelado:   { label: 'Cancelado',      cls: 'badge-red'    },
 }
 const TIPO_LABEL = { mesa: 'Mesa', domicilio: 'Domicilio', venta_interna: 'Interna', credito: 'Crédito' }
@@ -163,11 +165,78 @@ export default function PedidosAdmin() {
         metodos_pago: mpsConTipo,
         total,
       })
-      toast(`Venta ${res.data.folio} registrada ✓`, 'success', 4000)
+      
+      // Auto-generar PDF de la factura
+      descargarFacturaPDF(selPedido, mpsConTipo, total, cambio)
+      
+      // Cambiar estado a liquidado automáticamente
+      await api.cambiarEstado(selPedido.id, 'liquidado')
+
+      toast(`Venta ${res.data?.folio || ''} registrada ✓ Tirilla PDF exportada.`, 'success', 4000)
       setSelPedido(null)
       cargarPedidos()
     } catch (e) { toast(e.message, 'error') }
     finally { setLiquidando(false) }
+  }
+
+  function descargarFacturaPDF(p, mps, total, cambio) {
+    const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
+    const height = 100 + (items.length * 8)
+    const doc = new jsPDF({ unit: 'mm', format: [80, height] })
+    
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(14)
+    doc.text("AMARILLO POLLO", 40, 10, { align: "center" })
+    
+    doc.setFontSize(10)
+    doc.text("FACTURA DE VENTA", 40, 16, { align: "center" })
+    
+    doc.setFont("helvetica", "normal")
+    doc.setFontSize(9)
+    doc.text(`Orden: #${p.numero_pedido || p.num || 'S/N'}`, 5, 24)
+    doc.text(`Fecha: ${new Date(p.created_at || Date.now()).toLocaleString('es-CO')}`, 5, 28)
+    doc.text(`Cliente: ${p.nombre_cliente || 'N/A'}`, 5, 32)
+    
+    doc.line(5, 35, 75, 35)
+    doc.setFont("helvetica", "bold")
+    doc.text("CANT", 5, 40)
+    doc.text("DESCRIPCION", 18, 40)
+    doc.text("TOTAL", 60, 40)
+    doc.line(5, 42, 75, 42)
+    
+    let y = 47
+    doc.setFont("helvetica", "normal")
+    items.forEach(it => {
+      doc.text(`${it.cantidad}`, 5, y)
+      doc.text((it.nombre_producto||'').substring(0, 17), 15, y)
+      const sub = parseFloat(it.precio_unitario) * parseInt(it.cantidad)
+      doc.text(`$${sub.toLocaleString('es-CO')}`, 60, y)
+      y += 6
+    })
+    
+    doc.line(5, y, 75, y)
+    y += 5
+    
+    doc.setFont("helvetica", "bold")
+    doc.text(`TOTAL A PAGAR: $${parseFloat(total||0).toLocaleString('es-CO')}`, 5, y)
+    y += 6
+    
+    if (mps && mps.length) {
+      doc.setFont("helvetica", "normal")
+      mps.forEach(m => {
+        doc.text(`PAGO (${m.nombre}): $${parseFloat(m.monto||0).toLocaleString('es-CO')}`, 5, y)
+        y += 5
+      })
+      if (cambio > 0) {
+        doc.text(`CAMBIO: $${parseFloat(cambio||0).toLocaleString('es-CO')}`, 5, y)
+        y += 5
+      }
+    }
+    
+    doc.setFont("helvetica", "normal")
+    doc.text("¡Gracias por su compra!", 40, y + 5, { align: "center" })
+    
+    doc.save(`Factura_Orden_${p.numero_pedido || p.id}.pdf`)
   }
   function imprimirFactura(p) {
     const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
@@ -285,12 +354,10 @@ export default function PedidosAdmin() {
           {/* STATS */}
           <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
             {[
-              { label: 'Pedidos abiertos', value: pedidosFiltrados.filter(p => ['pendiente','preparacion','listo'].includes(p.estado)).length, sub: 'Activos hoy' },
-              { label: 'Total hoy', value: fmt(pedidosFiltrados.filter(p => p.estado === 'entregado').reduce((s,p) => s + parseFloat(p.total||0), 0)), sub: 'Ventas del día' },
-              { label: 'Ticket promedio', value: (() => { const e = pedidosFiltrados.filter(p=>p.estado==='entregado'); return e.length ? fmt(e.reduce((s,p)=>s+parseFloat(p.total||0),0)/e.length) : '$0' })(), sub: 'Por pedido' },
-              { label: 'Total pedidos', value: pedidosFiltrados.length, sub: 'En el filtro' },
+              { label: 'Órdenes / Estado General', value: `${pedidosFiltrados.filter(p => p.estado === 'liquidado').length} Liquidados`, sub: `${pedidosFiltrados.filter(p => p.estado !== 'liquidado' && p.estado !== 'cancelado').length} Pendientes por liquidar` },
+              { label: 'Pedidos en Filtro', value: pedidosFiltrados.length, sub: 'Viendo actualmente' },
             ].map((s, i) => (
-              <div key={i} className="stat-card" style={{ minWidth: 160 }}>
+              <div key={i} className="stat-card" style={{ minWidth: 220 }}>
                 <div className="stat-label">{s.label}</div>
                 <div className="stat-value">{s.value}</div>
                 <div className="stat-sub">{s.sub}</div>
@@ -446,7 +513,15 @@ export default function PedidosAdmin() {
                   <h3 style={{ fontSize: 18 }}>Pedido #{selPedido.numero_pedido}</h3>
                   <p>{selPedido.nombre_cliente || '—'} · {TIPO_LABEL[selPedido.tipo_pedido]}</p>
                 </div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setSelPedido(null)}>✕ Cerrar</button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--red)', background: 'rgba(239,68,68,0.1)' }} onClick={async () => {
+                    if (window.confirm("¿Seguro que deseas anular este pedido?")) {
+                      await cambiarEstado(selPedido.id, 'cancelado')
+                      setSelPedido(null)
+                    }
+                  }}>🗑️ Anular</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setSelPedido(null)}>✕ Cerrar</button>
+                </div>
               </div>
 
             <div className="card-body" style={{ maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
