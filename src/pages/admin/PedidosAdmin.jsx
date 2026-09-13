@@ -183,15 +183,6 @@ export default function PedidosAdmin() {
           <h2>Pedidos</h2>
           <p>Gestión de órdenes activas y liquidación.</p>
         </div>
-        <div className="page-actions">
-          <button className="btn btn-ghost" onClick={() => cargarPedidos()}>
-            <svg style={{ width: 14, height: 14, fill: 'currentColor' }} viewBox="0 0 16 16"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/><path d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/></svg>
-            Actualizar Data
-          </button>
-          <button className="btn btn-dark" onClick={generarComandas} disabled={!selectedIds.length}>
-            {selectedIds.length > 1 ? `Generar ${selectedIds.length} comandas` : 'Generar comanda'}
-          </button>
-        </div>
       </div>
 
       {/* STATS */}
@@ -244,8 +235,13 @@ export default function PedidosAdmin() {
             <option value="asc">Más antiguo</option>
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => cargarPedidos()}>Buscar</button>
+        <button className="btn" style={{ background: 'var(--am)', color: 'var(--bg)', fontWeight: 700 }} onClick={() => cargarPedidos()}>Buscar</button>
         <button className="btn btn-ghost" onClick={() => { setFFecha(today()); setFTipo(''); setFEstado(''); setFOrden('desc'); cargarPedidos({ fecha: today() }) }}>Limpiar</button>
+        
+        <div style={{ flex: 1 }} />
+        <button className="btn btn-dark" style={{ padding: '8px 20px' }} onClick={generarComandas} disabled={!selectedIds.length}>
+          {selectedIds.length > 1 ? `Generar ${selectedIds.length} comandas` : 'Generar comanda'}
+        </button>
       </div>
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
@@ -258,23 +254,22 @@ export default function PedidosAdmin() {
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
           ) : (
-            <div className="table-wrap" style={{ overflowX: 'auto' }}>
-              <table style={{ minWidth: 1000 }}>
+              <table style={{ minWidth: 1000, borderSpacing: 0, borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr>
-                    <th style={{ width: 32 }}>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ width: 32, padding: '12px 16px' }}>
                       <input type="checkbox" onChange={e => setSelectedIds(e.target.checked ? pedidos.map(p => p.id) : [])} />
                     </th>
-                    <th>Pedido</th>
-                    <th>Fecha / Hora</th>
-                    <th>Cliente</th>
-                    <th>Mesa</th>
-                    <th>Mesero</th>
-                    <th>Productos</th>
-                    <th>Obs.</th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
+                    <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Pedido</th>
+                    <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Fecha / Hora</th>
+                    <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Cliente</th>
+                    <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Mesa</th>
+                    <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Mesero</th>
+                    <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Productos</th>
+                    <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Obs.</th>
+                    <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Total</th>
+                    <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Estado</th>
+                    <th style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', textAlign: 'left', padding: '12px 0' }}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -284,34 +279,34 @@ export default function PedidosAdmin() {
                     const resumenProductos = items.map(it => `${it.cantidad}x ${it.nombre_producto}`).join(', ')
                     const d = new Date(p.created_at)
                     return (
-                      <tr key={p.id} onClick={() => verDetalle(p)} style={{ cursor: 'pointer', background: selPedido?.id === p.id ? 'var(--bg-hover)' : 'transparent' }}>
-                        <td onClick={ev => ev.stopPropagation()}>
+                      <tr key={p.id} onClick={() => verDetalle(p)} style={{ cursor: 'pointer', background: selPedido?.id === p.id ? 'rgba(255,255,255,0.03)' : 'transparent', borderBottom: '1px solid var(--border)' }}>
+                        <td onClick={ev => ev.stopPropagation()} style={{ padding: '12px 16px' }}>
                           <input type="checkbox" checked={selectedIds.includes(p.id)} onChange={ev => setSelectedIds(prev => ev.target.checked ? [...prev, p.id] : prev.filter(x => x !== p.id))} />
                         </td>
-                        <td><strong>#{p.numero_pedido}</strong></td>
-                        <td style={{ color: 'var(--text3)', fontSize: 11 }}>
+                        <td style={{ padding: '12px 0' }}><strong>#{p.numero_pedido}</strong></td>
+                        <td style={{ color: 'var(--text3)', fontSize: 11, padding: '12px 0' }}>
                           {d.toLocaleDateString('es-CO')}<br/>
                           <strong>{d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</strong>
                         </td>
-                        <td>{p.nombre_cliente || '—'}</td>
-                        <td>{p.mesa_nombre || <span style={{ color: 'var(--text3)', fontSize: 11 }}>{TIPO_LABEL[p.tipo_pedido]}</span>}</td>
-                        <td style={{ fontSize: 11 }}>{p.vendedor_nombre || 'Admin'}</td>
-                        <td style={{ fontSize: 11, maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={resumenProductos}>
+                        <td style={{ padding: '12px 0', fontSize: 12 }}>{p.nombre_cliente || '—'}</td>
+                        <td style={{ padding: '12px 0', fontSize: 12 }}>{p.mesa_nombre || <span style={{ color: 'var(--text3)', fontSize: 11 }}>{TIPO_LABEL[p.tipo_pedido]}</span>}</td>
+                        <td style={{ padding: '12px 0', fontSize: 11 }}>{p.vendedor_nombre || 'Admin'}</td>
+                        <td style={{ padding: '12px 0', fontSize: 11, maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={resumenProductos}>
                           {resumenProductos || '—'}
                         </td>
-                        <td style={{ fontSize: 11, maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.observaciones}>
+                        <td style={{ padding: '12px 0', fontSize: 11, maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.observaciones}>
                           {p.observaciones || '—'}
                         </td>
-                        <td><strong>{fmt(p.total)}</strong></td>
-                        <td onClick={ev => ev.stopPropagation()}>
+                        <td style={{ padding: '12px 0' }}><strong>{fmt(p.total)}</strong></td>
+                        <td onClick={ev => ev.stopPropagation()} style={{ padding: '12px 0' }}>
                           <select value={p.estado} onChange={ev => cambiarEstado(p.id, ev.target.value)}
                             style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '4px 7px', fontSize: 12, fontFamily: 'inherit', cursor: 'pointer', width: 110 }}>
                             {Object.entries(EST_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                           </select>
                         </td>
-                        <td onClick={ev => ev.stopPropagation()}>
+                        <td onClick={ev => ev.stopPropagation()} style={{ padding: '12px 0' }}>
                           <div style={{ display: 'flex', gap: 4 }}>
-                            <button className="btn btn-ghost btn-xs" style={{ padding: '4px 6px' }} onClick={() => {
+                            <button className="btn btn-ghost btn-xs" style={{ padding: '4px 8px', color: 'var(--text2)' }} onClick={() => {
                               if (p.estado !== 'entregado') {
                                 toast('⚠️ Por favor, liquida el pedido en el carrito primero antes de imprimir.', 'error', 4000)
                                 verDetalle(p)
@@ -321,7 +316,7 @@ export default function PedidosAdmin() {
                                 w.print()
                               }
                             }}>🖨️ Factura</button>
-                            <button className="btn btn-ghost btn-xs" style={{ padding: '4px 6px' }} onClick={() => verDetalle(p)}>✏️ Editar</button>
+                            <button className="btn btn-ghost btn-xs" style={{ padding: '4px 8px', color: 'var(--am)' }} onClick={() => verDetalle(p)}>✏️ Editar</button>
                           </div>
                         </td>
                       </tr>
@@ -356,36 +351,47 @@ export default function PedidosAdmin() {
 
             <div className="card-body" style={{ maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
               {/* ESTADO */}
-              <div className="detail-section" style={{ marginBottom: 16 }}>
-                <div className="detail-section-label">Estado actual</div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <span className={`badge ${EST_MAP[selPedido.estado]?.cls}`} style={{ fontSize: 14, padding: '6px 12px' }}>{EST_MAP[selPedido.estado]?.label}</span>
+              <div className="detail-section" style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', fontWeight: 700, marginBottom: 8 }}>Estado actual</div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <span style={{ 
+                    background: selPedido.estado === 'entregado' ? '#166534' : 'var(--bg3)', 
+                    color: selPedido.estado === 'entregado' ? '#4ade80' : 'var(--text)', 
+                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: selPedido.estado === 'entregado' ? '1px solid #14532d' : '1px solid var(--border)' 
+                  }}>
+                    {EST_MAP[selPedido.estado]?.label}
+                  </span>
                   <div style={{ fontSize: 11, color: 'var(--text3)' }}>
                     Hora: {new Date(selPedido.created_at).toLocaleTimeString('es-CO')}<br/>
-                    Mesa: {selPedido.mesa_nombre || 'N/A'}
+                    Mesa: {selPedido.mesa_nombre || 'Mesa 1'}
                   </div>
                 </div>
               </div>
 
               {/* PRODUCTOS EDITABLES */}
-              <div className="detail-section">
-                <div className="detail-section-label">Productos</div>
-                <div className="item-grid item-grid-hdr">
-                  <span>Producto</span><span style={{ textAlign: 'center' }}>Cant</span>
-                  <span style={{ textAlign: 'right' }}>P.Unit</span><span style={{ textAlign: 'right' }}>Sub</span><span></span>
+              <div className="detail-section" style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', fontWeight: 700, marginBottom: 8 }}>Productos</div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 50px 60px 70px 24px', gap: 8, paddingBottom: 8, borderBottom: '1px solid var(--border)', fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', fontWeight: 700 }}>
+                  <span>Producto</span>
+                  <span style={{ textAlign: 'center' }}>Cant</span>
+                  <span style={{ textAlign: 'right' }}>P.Unit</span>
+                  <span style={{ textAlign: 'right' }}>Sub</span>
+                  <span></span>
                 </div>
+                
                 {itemsEdit.map((it, idx) => (
-                  <div key={idx} className="item-grid">
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 50px 60px 70px 24px', gap: 8, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
                     <span style={{ fontSize: 12, color: 'var(--text)' }}>{it.nombre_producto}</span>
-                    <input className="item-inp" type="number" value={it.cantidad} min="1" style={{ textAlign: 'center' }} onChange={e => updItem(idx, 'cantidad', parseInt(e.target.value) || 1)} />
-                    <input className="item-inp" type="number" value={it.precio_unitario} onChange={e => updItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
+                    <input className="input" type="number" value={it.cantidad} min="1" style={{ textAlign: 'center', padding: '4px', fontSize: 12, background: 'var(--bg3)', border: 'none' }} onChange={e => updItem(idx, 'cantidad', parseInt(e.target.value) || 1)} />
+                    <span style={{ textAlign: 'right', fontSize: 12, color: 'var(--text2)' }}>{it.precio_unitario}</span>
                     <span style={{ textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{fmt((parseFloat(it.precio_unitario)||0) * (parseInt(it.cantidad)||1))}</span>
-                    <button className="item-remove" onClick={() => quitarItem(idx)}>×</button>
+                    <button className="btn btn-ghost btn-xs" style={{ padding: 0, color: '#ef4444' }} onClick={() => quitarItem(idx)}>×</button>
                   </div>
                 ))}
 
                 <div className="prod-search-wrap">
-                  <input ref={prodSearchRef} className="filter-input" style={{ width: '100%', marginTop: 8 }} placeholder="Buscar y agregar producto..." onChange={e => buscarProducto(e.target.value)} />
+                  <input ref={prodSearchRef} className="input" style={{ width: '100%', marginTop: 12, background: 'var(--bg3)', border: 'none', padding: '10px 14px' }} placeholder="Buscar y agregar producto..." onChange={e => buscarProducto(e.target.value)} />
                   {prodResults.length > 0 && (
                     <div className="prod-results">
                       {prodResults.map(p => (
@@ -400,26 +406,26 @@ export default function PedidosAdmin() {
               </div>
 
               {/* OBSERVACIONES */}
-              <div className="detail-section">
-                <div className="detail-section-label">Observaciones</div>
-                <textarea className="textarea" style={{ minHeight: 50, fontSize: 12 }} value={obsEdit} onChange={e => setObsEdit(e.target.value)} placeholder="Observaciones del pedido..." />
+              <div className="detail-section" style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', fontWeight: 700, marginBottom: 8 }}>Observaciones</div>
+                <textarea className="input" style={{ minHeight: 40, fontSize: 12, padding: '10px 14px' }} value={obsEdit} onChange={e => setObsEdit(e.target.value)} placeholder="Observaciones del pedido..." />
               </div>
 
-              {/* TOTAL */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', fontSize: 15, fontWeight: 800, borderTop: '2px solid var(--border)' }}>
-                <span>Total</span><span style={{ color: 'var(--am)' }}>{fmt(calcTotal())}</span>
+              {/* TOTAL Y ACTUALIZAR */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', fontSize: 15, fontWeight: 800 }}>
+                <span>Total</span><span style={{ color: 'var(--am)', fontSize: 20 }}>{fmt(calcTotal())}</span>
               </div>
 
-              <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: 14 }} onClick={actualizarPedido} disabled={guardando || selPedido.estado === 'entregado'}>
+              <button className="btn" style={{ width: '100%', justifyContent: 'center', marginBottom: 24, background: 'var(--am)', color: 'var(--bg)', fontWeight: 800, padding: 12 }} onClick={actualizarPedido} disabled={guardando || selPedido.estado === 'entregado'}>
                 {guardando ? 'Guardando...' : 'Actualizar pedido'}
               </button>
 
               {/* LIQUIDACIÓN SIMPLIFICADA */}
               {selPedido.estado === 'entregado' ? (
-                <div style={{ padding: '20px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: 12, textAlign: 'center', marginTop: 20 }}>
+                <div style={{ padding: '24px', background: 'rgba(22, 101, 52, 0.2)', border: '1px solid #14532d', borderRadius: 12, textAlign: 'center', marginTop: 10 }}>
                   <div style={{ fontSize: 24, marginBottom: 8 }}>✅</div>
-                  <h4 style={{ color: '#15803d', fontWeight: 800, marginBottom: 4 }}>VENTA FACTURADA</h4>
-                  <p style={{ fontSize: 12, color: 'var(--text2)' }}>Este pedido ya fue liquidado. No se pueden modificar los métodos de pago para evitar doble facturación.</p>
+                  <h4 style={{ color: '#4ade80', fontWeight: 800, marginBottom: 4 }}>VENTA FACTURADA</h4>
+                  <p style={{ fontSize: 12, color: 'var(--text3)' }}>Este pedido ya fue liquidado. No se pueden modificar los métodos de pago para evitar doble facturación.</p>
                 </div>
               ) : selPedido.estado === 'cancelado' ? (
                 <div style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12, textAlign: 'center', marginTop: 20 }}>

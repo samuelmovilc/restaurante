@@ -58,17 +58,20 @@ export default function AdminLayout() {
         </nav>
 
         <div className="topbar-user">
+          <button className="btn btn-ghost btn-sm" onClick={() => window.location.reload()} style={{ marginRight: 16 }}>
+            ↻ Actualizar Data
+          </button>
+          
           <a href="/" style={{ color: 'var(--text3)', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Pedidos
+            ← Pedidos
           </a>
           <a href="/cocina" style={{ color: 'var(--text3)', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-            🍳 Cocina
+            Cocina
           </a>
           {usuario && (
             <>
-              <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
-              <div className="topbar-user-name">{usuario.nombre}</div>
+              <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 8px' }} />
+              <div className="topbar-user-name">Administrador</div>
               <button className="btn btn-ghost btn-sm" onClick={handleLogout}>
                 Salir
               </button>
