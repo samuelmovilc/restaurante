@@ -375,45 +375,54 @@ export default function PedidosAdmin() {
                 {guardando ? 'Guardando...' : 'Actualizar pedido'}
               </button>
 
-              {/* LIQUIDACIÓN */}
-              <div className="liq-section">
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>Liquidar venta</div>
+              {/* LIQUIDACIÓN SIMPLIFICADA */}
+              <div className="liq-section" style={{ background: 'var(--bg2)', padding: '16px 20px', borderRadius: 12, border: '1px solid var(--border)', marginTop: 24 }}>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase' }}>Total</span>
+                  <span style={{ fontSize: 24, fontWeight: 900, color: '#3B82F6' }}>{fmt(calcTotal())}</span>
+                </div>
 
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 6 }}>Métodos de pago</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase' }}>Métodos de pago</span>
+                  <button className="btn btn-ghost btn-xs" style={{ color: '#3B82F6', fontWeight: 700 }} onClick={() => setLiqMPs(prev => [...prev, { mp: '', monto: '' }])}>
+                    + Agregar
+                  </button>
+                </div>
+
                 {liqMPs.map((mp, i) => (
-                  <div key={i} className="mp-row">
-                    <select className="mp-select" value={mp.mp} onChange={e => setLiqMPs(prev => prev.map((x, j) => j === i ? { ...x, mp: e.target.value } : x))}>
+                  <div key={i} className="mp-row" style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                    <select className="input" style={{ flex: 1, padding: '8px 10px', fontSize: 13 }} value={mp.mp} onChange={e => setLiqMPs(prev => prev.map((x, j) => j === i ? { ...x, mp: e.target.value } : x))}>
                       <option value="">— Seleccionar —</option>
                       {metodosPago.filter(m => m.activo).map(m => <option key={m.id} value={m.nombre}>{m.nombre}</option>)}
                     </select>
-                    <input className="mp-input" type="number" placeholder="Monto" value={mp.monto} onChange={e => setLiqMPs(prev => prev.map((x, j) => j === i ? { ...x, monto: e.target.value } : x))} />
-                    <button className="mp-remove" onClick={() => setLiqMPs(prev => prev.filter((_, j) => j !== i))}>×</button>
+                    <input className="input" type="number" placeholder="Monto" style={{ width: 130, textAlign: 'right', padding: '8px 10px', fontSize: 13 }} value={mp.monto} onChange={e => setLiqMPs(prev => prev.map((x, j) => j === i ? { ...x, monto: e.target.value } : x))} />
+                    <button className="btn btn-danger btn-icon" style={{ width: 36, height: 36, padding: 0, background: 'rgba(239,68,68,0.1)' }} onClick={() => setLiqMPs(prev => prev.filter((_, j) => j !== i))}>×</button>
                   </div>
                 ))}
-                <button className="btn btn-ghost btn-xs" style={{ marginBottom: 10 }} onClick={() => setLiqMPs(prev => [...prev, { mp: '', monto: '' }])}>+ Agregar método de pago</button>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: 10 }}>Cliente</label>
-                    <input className="input" style={{ fontSize: 12 }} value={liqCliente} onChange={e => setLiqCliente(e.target.value)} />
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: 10 }}>Paga con</label>
-                    <input className="input" type="number" style={{ fontSize: 12, textAlign: 'right' }} value={liqPagaCon} onChange={e => setLiqPagaCon(parseFloat(e.target.value) || 0)} />
-                  </div>
-                </div>
-                <div className="form-group" style={{ marginBottom: 8 }}>
-                  <label className="label" style={{ fontSize: 10 }}>Observaciones pago</label>
-                  <input className="input" style={{ fontSize: 12 }} value={liqObs} onChange={e => setLiqObs(e.target.value)} placeholder="Opcional..." />
+                <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: 12, alignItems: 'center', marginTop: 16, marginBottom: 8 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Cliente</label>
+                  <input className="input" style={{ padding: '8px 12px' }} value={liqCliente} onChange={e => setLiqCliente(e.target.value)} />
+                  
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Obs.</label>
+                  <input className="input" style={{ padding: '8px 12px' }} placeholder="Observaciones..." value={liqObs} onChange={e => setLiqObs(e.target.value)} />
+                  
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Paga con</label>
+                  <input className="input" type="number" style={{ padding: '8px 12px' }} value={liqPagaCon || ''} onChange={e => setLiqPagaCon(parseFloat(e.target.value) || 0)} />
                 </div>
 
-                <div className={`faltante-bar ${faltante < 0 ? 'falt-neg' : faltante > 0 ? 'falt-pos' : 'falt-zero'}`}>
-                  <span>{faltante < 0 ? 'Faltante' : faltante > 0 ? 'Saldo a favor' : 'Exacto'}</span>
-                  <span>{fmt(Math.abs(faltante))}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', padding: '12px 16px', borderRadius: 8, marginTop: 16, marginBottom: 16 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                    {liqPagaCon > 0 ? 'Cambio / Vueltas' : ((calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0)) > 0 ? 'Saldo Faltante' : 'Cambio / Vueltas')}
+                  </span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: '#3B82F6' }}>
+                    {fmt(liqPagaCon > 0 ? Math.max(0, liqPagaCon - calcTotal()) : Math.abs(calcTotal() - liqMPs.reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0)))}
+                  </span>
                 </div>
 
-                <button className="btn-liquidar" onClick={liquidar} disabled={liquidando}>
-                  {liquidando ? 'Procesando...' : 'Liquidar venta'}
+                <button className="btn btn-success btn-lg" style={{ width: '100%', fontSize: 15, fontWeight: 800, padding: 14, letterSpacing: '1px' }} onClick={liquidar} disabled={liquidando}>
+                  {liquidando ? 'Procesando...' : '✓ PAGAR'}
                 </button>
               </div>
             </div>
