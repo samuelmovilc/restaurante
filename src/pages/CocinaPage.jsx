@@ -5,9 +5,8 @@ import { useToast } from '../hooks/useToast'
 const ESTADOS = ['pendiente', 'preparacion']
 
 function getBogotaDate(created_at) {
-  const localStr = (created_at || '').replace('Z', '').replace('T', ' ')
-  let d = new Date(localStr.replace(/-/g, '/'))
-  d.setHours(d.getHours() + 2) // Compensar las 2 horas de atraso del servidor
+  let d = new Date(created_at)
+  d.setHours(d.getHours() + 2) // Compensar las 2 horas de atraso del reloj del servidor
   return d
 }
 
