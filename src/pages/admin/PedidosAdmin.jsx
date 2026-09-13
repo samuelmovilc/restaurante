@@ -185,68 +185,69 @@ export default function PedidosAdmin() {
         </div>
       </div>
 
-      {/* STATS */}
-      <div className="stats-grid stats-4">
-        {[
-          { label: 'Pedidos abiertos', value: pedidos.filter(p => ['pendiente','preparacion','listo'].includes(p.estado)).length, sub: 'Activos hoy' },
-          { label: 'Total hoy', value: fmt(pedidos.filter(p => p.estado === 'entregado').reduce((s,p) => s + parseFloat(p.total||0), 0)), sub: 'Ventas del día' },
-          { label: 'Ticket promedio', value: (() => { const e = pedidos.filter(p=>p.estado==='entregado'); return e.length ? fmt(e.reduce((s,p)=>s+parseFloat(p.total||0),0)/e.length) : '$0' })(), sub: 'Por pedido' },
-          { label: 'Total pedidos', value: pedidos.length, sub: 'En el filtro' },
-        ].map((s, i) => (
-          <div key={i} className="stat-card">
-            <div className="stat-label">{s.label}</div>
-            <div className="stat-value">{s.value}</div>
-            <div className="stat-sub">{s.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* FILTROS */}
-      <div className="filters-bar">
-        <div className="filter-group">
-          <label className="filter-label">Fecha</label>
-          <input className="filter-input" type="date" value={fFecha} onChange={e => setFFecha(e.target.value)} />
-        </div>
-        <div className="filter-group">
-          <label className="filter-label">Tipo</label>
-          <select className="filter-input" value={fTipo} onChange={e => setFTipo(e.target.value)}>
-            <option value="">Todos</option>
-            <option value="mesa">Mesa</option>
-            <option value="domicilio">Domicilio</option>
-            <option value="venta_interna">Interna</option>
-            <option value="credito">Crédito</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label className="filter-label">Estado</label>
-          <select className="filter-input" value={fEstado} onChange={e => setFEstado(e.target.value)}>
-            <option value="">Todos</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="preparacion">En preparación</option>
-            <option value="listo">Listo</option>
-            <option value="entregado">Entregado</option>
-            <option value="cancelado">Cancelado</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label className="filter-label">Ordenar</label>
-          <select className="filter-input" value={fOrden} onChange={e => setFOrden(e.target.value)}>
-            <option value="desc">Más reciente</option>
-            <option value="asc">Más antiguo</option>
-          </select>
-        </div>
-        <button className="btn" style={{ background: 'var(--am)', color: 'var(--bg)', fontWeight: 700 }} onClick={() => cargarPedidos()}>Buscar</button>
-        <button className="btn btn-ghost" onClick={() => { setFFecha(today()); setFTipo(''); setFEstado(''); setFOrden('desc'); cargarPedidos({ fecha: today() }) }}>Limpiar</button>
-        
-        <div style={{ flex: 1 }} />
-        <button className="btn btn-dark" style={{ padding: '8px 20px' }} onClick={generarComandas} disabled={!selectedIds.length}>
-          {selectedIds.length > 1 ? `Generar ${selectedIds.length} comandas` : 'Generar comanda'}
-        </button>
-      </div>
-
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-        {/* TABLA DE PEDIDOS */}
-        <div className="card" style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* STATS */}
+          <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Pedidos abiertos', value: pedidos.filter(p => ['pendiente','preparacion','listo'].includes(p.estado)).length, sub: 'Activos hoy' },
+              { label: 'Total hoy', value: fmt(pedidos.filter(p => p.estado === 'entregado').reduce((s,p) => s + parseFloat(p.total||0), 0)), sub: 'Ventas del día' },
+              { label: 'Ticket promedio', value: (() => { const e = pedidos.filter(p=>p.estado==='entregado'); return e.length ? fmt(e.reduce((s,p)=>s+parseFloat(p.total||0),0)/e.length) : '$0' })(), sub: 'Por pedido' },
+              { label: 'Total pedidos', value: pedidos.length, sub: 'En el filtro' },
+            ].map((s, i) => (
+              <div key={i} className="stat-card" style={{ minWidth: 160 }}>
+                <div className="stat-label">{s.label}</div>
+                <div className="stat-value">{s.value}</div>
+                <div className="stat-sub">{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* FILTROS */}
+          <div className="filters-bar" style={{ marginBottom: 24 }}>
+            <div className="filter-group">
+              <label className="filter-label">Fecha</label>
+              <input className="filter-input" type="date" value={fFecha} onChange={e => setFFecha(e.target.value)} />
+            </div>
+            <div className="filter-group">
+              <label className="filter-label">Tipo</label>
+              <select className="filter-input" value={fTipo} onChange={e => setFTipo(e.target.value)}>
+                <option value="">Todos</option>
+                <option value="mesa">Mesa</option>
+                <option value="domicilio">Domicilio</option>
+                <option value="venta_interna">Interna</option>
+                <option value="credito">Crédito</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label className="filter-label">Estado</label>
+              <select className="filter-input" value={fEstado} onChange={e => setFEstado(e.target.value)}>
+                <option value="">Todos</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="preparacion">En preparación</option>
+                <option value="listo">Listo</option>
+                <option value="entregado">Entregado</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label className="filter-label">Ordenar</label>
+              <select className="filter-input" value={fOrden} onChange={e => setFOrden(e.target.value)}>
+                <option value="desc">Más reciente</option>
+                <option value="asc">Más antiguo</option>
+              </select>
+            </div>
+            <button className="btn" style={{ background: 'var(--am)', color: 'var(--bg)', fontWeight: 700 }} onClick={() => cargarPedidos()}>Buscar</button>
+            <button className="btn btn-ghost" onClick={() => { setFFecha(today()); setFTipo(''); setFEstado(''); setFOrden('desc'); cargarPedidos({ fecha: today() }) }}>Limpiar</button>
+            
+            <div style={{ flex: 1 }} />
+            <button className="btn btn-dark" style={{ padding: '8px 20px' }} onClick={generarComandas} disabled={!selectedIds.length}>
+              {selectedIds.length > 1 ? `Generar ${selectedIds.length} comandas` : 'Generar comanda'}
+            </button>
+          </div>
+
+          {/* TABLA DE PEDIDOS */}
+          <div className="card">
           <div className="card-header">
             <div><h3>Órdenes activas</h3><p>{pedidos.length} resultado{pedidos.length !== 1 ? 's' : ''}</p></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { window.print() }}>Imprimir seleccionados</button>
@@ -331,9 +332,10 @@ export default function PedidosAdmin() {
             </div>
           )}
         </div>
+      </div>
 
-        {/* PANEL LATERAL DE DETALLE (EL CARRITO SIEMPRE VISIBLE) */}
-        <div className="card" style={{ width: 440, flexShrink: 0, position: 'sticky', top: 84, minHeight: 600 }}>
+      {/* PANEL LATERAL DE DETALLE (EL CARRITO SIEMPRE VISIBLE) */}
+      <div className="card" style={{ width: 440, flexShrink: 0, position: 'sticky', top: 84, minHeight: 600 }}>
           {!selPedido ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 40, color: 'var(--text3)', textAlign: 'center' }}>
               <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.5 }}>🛒</div>
