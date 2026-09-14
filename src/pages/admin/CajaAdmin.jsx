@@ -118,9 +118,17 @@ export default function CajaAdmin() {
 
   function exportarPDF() {
     try {
-      const doc = new jsPDF()
-      doc.setFontSize(16)
-      doc.text(`Cierre de Caja (Del ${fi} al ${ff})`, 14, 20)
+      const doc = new jsPDF({ unit: 'mm', format: [80, 200] })
+      let y = 10
+      
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text('CIERRE DE CAJA', 40, y, { align: 'center' })
+      y += 6
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Del: ${fi}`, 40, y, { align: 'center' }); y += 5
+      doc.text(`Al: ${ff}`, 40, y, { align: 'center' }); y += 10
       
       const aceptadas = ventas.filter(x => x.estado === 'ACEPTADA')
       const totalesPorMetodo = {}
@@ -138,47 +146,42 @@ export default function CajaAdmin() {
         })
       })
 
-      const resumenBody = Object.keys(totalesPorMetodo).map(tipo => [tipo, fmt(totalesPorMetodo[tipo])])
-      resumenBody.push(['', ''])
-      resumenBody.push(['TOTAL GENERAL', fmt(totalGeneral)])
-      resumenBody.push(['UTILIDAD BRUTA', fmt(stats.utilidad_bruta)])
-      resumenBody.push(['MARGEN', stats.porcentaje_utilidad + '%'])
-
-      doc.autoTable({
-        startY: 30,
-        head: [['Método de Pago', 'Total Recaudado']],
-        body: resumenBody,
-        theme: 'grid',
-        headStyles: { fillColor: [40, 40, 40] }
-      })
-
-      const movimientosBody = ventas.map(v => {
-        let pagos = ''
-        try {
-          const p = JSON.parse(v.metodos_pago)
-          pagos = p.map(x => `${x.tipo}: $${x.monto}`).join(' | ')
-        } catch(e){}
-        
-        const fechaHora = new Date(v.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })
-        const ut = parseFloat(v.total || 0) - parseFloat(v.total_costo || 0)
-        return [v.id_venta, fechaHora, v.cliente_nombre, fmt(v.total), fmt(ut), pagos, v.estado]
-      })
-
-      doc.addPage()
-      doc.setFontSize(14)
-      doc.text('Detalle de Ventas', 14, 20)
+      doc.setFont('helvetica', 'bold')
+      doc.text('MÉTODOS DE PAGO', 40, y, { align: 'center' })
+      y += 6
+      doc.setFont('helvetica', 'normal')
       
-      doc.autoTable({
-        startY: 30,
-        head: [['Folio', 'Fecha', 'Cliente', 'Total', 'Utilidad', 'Pago', 'Estado']],
-        body: movimientosBody,
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [40, 40, 40] }
+      Object.keys(totalesPorMetodo).forEach(tipo => {
+        doc.text(`${tipo}:`, 10, y)
+        doc.text(fmt(totalesPorMetodo[tipo]), 70, y, { align: 'right' })
+        y += 5
       })
+      
+      y += 5
+      doc.line(10, y, 70, y)
+      y += 7
+      
+      doc.setFont('helvetica', 'bold')
+      doc.text('TOTAL RECAUDADO:', 10, y)
+      doc.text(fmt(totalGeneral), 70, y, { align: 'right' })
+      y += 8
+      
+      doc.text('UTILIDAD BRUTA:', 10, y)
+      doc.text(fmt(stats.utilidad_bruta), 70, y, { align: 'right' })
+      y += 8
+      
+      doc.text('MARGEN:', 10, y)
+      doc.text(stats.porcentaje_utilidad + '%', 70, y, { align: 'right' })
+      y += 10
+      
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Ventas procesadas: ${aceptadas.length}`, 40, y, { align: 'center' })
+      y += 4
+      doc.text('Generado por el sistema', 40, y, { align: 'center' })
 
-      doc.save(`Caja_${fi}_al_${ff}.pdf`)
-      toast('PDF generado correctamente', 'success')
+      doc.save(`CierreCaja_${fi}_al_${ff}.pdf`)
+      toast('PDF de Cierre generado (80mm)', 'success')
     } catch (e) {
       toast('Error al exportar PDF: ' + e.message, 'error')
     }
