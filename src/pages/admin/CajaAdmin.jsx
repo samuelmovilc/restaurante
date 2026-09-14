@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
+import { jsPDF } from 'jspdf'
+import 'jspdf-autotable'
 import { api, fmt, fmtF, today } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
 
@@ -107,12 +109,78 @@ export default function CajaAdmin() {
       const wsMovimientos = XLSX.utils.json_to_sheet(movimientos)
 
       XLSX.utils.book_append_sheet(wb, wsResumen, 'Cierre por Método de Pago')
-      XLSX.utils.book_append_sheet(wb, wsMovimientos, 'Movimientos y Ventas')
-
       XLSX.writeFile(wb, `Caja_${fi}_al_${ff}.xlsx`)
       toast('Exportado a Excel correctamente', 'success')
     } catch(e) {
       toast('Error al exportar: ' + e.message, 'error')
+    }
+  }
+
+  function exportarPDF() {
+    try {
+      const doc = new jsPDF()
+      doc.setFontSize(16)
+      doc.text(`Cierre de Caja (Del ${fi} al ${ff})`, 14, 20)
+      
+      const aceptadas = ventas.filter(x => x.estado === 'ACEPTADA')
+      const totalesPorMetodo = {}
+      let totalGeneral = 0
+      
+      aceptadas.forEach(v => {
+        let parsed = []
+        try { parsed = JSON.parse(v.metodos_pago) } catch(e){}
+        parsed.forEach(m => {
+          const tipo = m.tipo || 'Efectivo'
+          const amt = parseFloat(m.monto || 0)
+          if (!totalesPorMetodo[tipo]) totalesPorMetodo[tipo] = 0
+          totalesPorMetodo[tipo] += amt
+          totalGeneral += amt
+        })
+      })
+
+      const resumenBody = Object.keys(totalesPorMetodo).map(tipo => [tipo, fmt(totalesPorMetodo[tipo])])
+      resumenBody.push(['', ''])
+      resumenBody.push(['TOTAL GENERAL', fmt(totalGeneral)])
+      resumenBody.push(['UTILIDAD BRUTA', fmt(stats.utilidad_bruta)])
+      resumenBody.push(['MARGEN', stats.porcentaje_utilidad + '%'])
+
+      doc.autoTable({
+        startY: 30,
+        head: [['Método de Pago', 'Total Recaudado']],
+        body: resumenBody,
+        theme: 'grid',
+        headStyles: { fillColor: [40, 40, 40] }
+      })
+
+      const movimientosBody = ventas.map(v => {
+        let pagos = ''
+        try {
+          const p = JSON.parse(v.metodos_pago)
+          pagos = p.map(x => `${x.tipo}: $${x.monto}`).join(' | ')
+        } catch(e){}
+        
+        const fechaHora = new Date(v.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })
+        const ut = parseFloat(v.total || 0) - parseFloat(v.total_costo || 0)
+        return [v.id_venta, fechaHora, v.cliente_nombre, fmt(v.total), fmt(ut), pagos, v.estado]
+      })
+
+      doc.addPage()
+      doc.setFontSize(14)
+      doc.text('Detalle de Ventas', 14, 20)
+      
+      doc.autoTable({
+        startY: 30,
+        head: [['Folio', 'Fecha', 'Cliente', 'Total', 'Utilidad', 'Pago', 'Estado']],
+        body: movimientosBody,
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [40, 40, 40] }
+      })
+
+      doc.save(`Caja_${fi}_al_${ff}.pdf`)
+      toast('PDF generado correctamente', 'success')
+    } catch (e) {
+      toast('Error al exportar PDF: ' + e.message, 'error')
     }
   }
 
@@ -161,7 +229,8 @@ export default function CajaAdmin() {
           </select>
         </div>
         <button className="btn btn-primary btn-sm" onClick={cargar}>Actualizar</button>
-        <button className="btn btn-success btn-sm" onClick={exportar}>Exportar Excel</button>
+        <button className="btn btn-success btn-sm" onClick={exportar} style={{ marginLeft: 8 }}>Exportar Excel</button>
+        <button className="btn btn-danger btn-sm" onClick={exportarPDF} style={{ marginLeft: 8 }}>Exportar PDF</button>
         <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: 'var(--text3)' }}>
           Total: {fmt(stats.total_vendido)} · {ventas.length} ventas
         </span>
