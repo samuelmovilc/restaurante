@@ -25,8 +25,9 @@ export default function CajaAdmin() {
       
       const aceptadas = ventasData.filter(x => x.estado === 'ACEPTADA')
       const totalVendido = aceptadas.reduce((sum, x) => sum + parseFloat(x.total || 0), 0)
-      const utilidadBruta = aceptadas.reduce((sum, x) => sum + (parseFloat(x.total || 0) - parseFloat(x.total_costo || 0)), 0)
-      const porcentaje = totalVendido > 0 ? ((utilidadBruta / totalVendido) * 100).toFixed(2) : 0
+      const totalCosto = aceptadas.reduce((sum, x) => sum + parseFloat(x.total_costo || 0), 0)
+      const utilidadBruta = totalVendido - totalCosto
+      const porcentaje = totalCosto > 0 ? ((utilidadBruta / totalCosto) * 100).toFixed(2) : (utilidadBruta > 0 ? 100 : 0)
       
       setStats({
         total_ventas: aceptadas.length,
