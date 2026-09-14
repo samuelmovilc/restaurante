@@ -596,7 +596,7 @@ export default function PedidosAdmin() {
               </button>
 
               {/* LIQUIDACIÓN SIMPLIFICADA */}
-              {selPedido.estado === 'entregado' ? (
+              {selPedido.estado === 'liquidado' ? (
                 <div style={{ padding: '24px', background: 'rgba(22, 101, 52, 0.2)', border: '1px solid #14532d', borderRadius: 12, textAlign: 'center', marginTop: 10 }}>
                   <div style={{ fontSize: 24, marginBottom: 8 }}>✅</div>
                   <h4 style={{ color: '#4ade80', fontWeight: 800, marginBottom: 4 }}>VENTA FACTURADA</h4>
