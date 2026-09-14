@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import * as XLSX from 'xlsx'
 import { api, fmt, fmtF, today } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
 
@@ -47,8 +48,72 @@ export default function CajaAdmin() {
   }
 
   function exportar() {
-    const url = api.exportarVentas({ fecha_inicio: fi, fecha_fin: ff, ...(est ? { estado: est } : {}) })
-    window.open(url, '_blank')
+    try {
+      const aceptadas = ventas.filter(x => x.estado === 'ACEPTADA')
+      
+      const totalesPorMetodo = {}
+      let totalGeneral = 0
+      
+      aceptadas.forEach(v => {
+        let parsed = []
+        try { parsed = JSON.parse(v.metodos_pago) } catch(e){}
+        parsed.forEach(m => {
+          const tipo = m.tipo || 'Efectivo'
+          const amt = parseFloat(m.monto || 0)
+          if (!totalesPorMetodo[tipo]) totalesPorMetodo[tipo] = 0
+          totalesPorMetodo[tipo] += amt
+          totalGeneral += amt
+        })
+      })
+
+      const resumenCierre = [
+        ['CIERRE DE CAJA', `Del ${fi} al ${ff}`],
+        [],
+        ['MÉTODO DE PAGO', 'TOTAL RECAUDADO']
+      ]
+      
+      Object.keys(totalesPorMetodo).forEach(tipo => {
+        resumenCierre.push([tipo, totalesPorMetodo[tipo]])
+      })
+      resumenCierre.push([])
+      resumenCierre.push(['TOTAL GENERAL', totalGeneral])
+      resumenCierre.push([])
+      resumenCierre.push(['UTILIDAD BRUTA', stats.utilidad_bruta])
+      resumenCierre.push(['MARGEN %', stats.porcentaje_utilidad + '%'])
+
+      const movimientos = ventas.map(v => {
+        let pagos = ''
+        try {
+          const p = JSON.parse(v.metodos_pago)
+          pagos = p.map(x => `${x.tipo}: $${x.monto}`).join(' | ')
+        } catch(e){}
+        
+        return {
+          'Folio': v.id_venta,
+          'Fecha': new Date(v.created_at).toLocaleDateString('es-CO'),
+          'Hora': new Date(v.created_at).toLocaleTimeString('es-CO'),
+          'Cliente': v.cliente_nombre,
+          'Ítems': v.items_count || 0,
+          'Total Venta': parseFloat(v.total || 0),
+          'Costo (Sistema)': parseFloat(v.total_costo || 0),
+          'Utilidad': parseFloat(v.total || 0) - parseFloat(v.total_costo || 0),
+          'Métodos de Pago': pagos,
+          'Estado': v.estado
+        }
+      })
+
+      const wb = XLSX.utils.book_new()
+      const wsResumen = XLSX.utils.aoa_to_sheet(resumenCierre)
+      const wsMovimientos = XLSX.utils.json_to_sheet(movimientos)
+
+      XLSX.utils.book_append_sheet(wb, wsResumen, 'Cierre por Método de Pago')
+      XLSX.utils.book_append_sheet(wb, wsMovimientos, 'Movimientos y Ventas')
+
+      XLSX.writeFile(wb, `Caja_${fi}_al_${ff}.xlsx`)
+      toast('Exportado a Excel correctamente', 'success')
+    } catch(e) {
+      toast('Error al exportar: ' + e.message, 'error')
+    }
   }
 
   return (
