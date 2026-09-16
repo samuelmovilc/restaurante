@@ -7,7 +7,7 @@ const UNIDADES = ['kg', 'g', 'lt', 'ml', 'und', 'taza']
 function calcular(ings, porciones, precio) {
   const costo = ings.reduce((s, i) => s + (parseFloat(i.cantidad) || 0) * (parseFloat(i.costo_unitario) || 0), 0)
   const pp    = costo / (parseInt(porciones) || 1)
-  const mg    = precio > 0 ? ((precio - pp) / precio * 100) : 0
+  const mg    = pp > 0 ? ((precio - pp) / pp * 100) : 0
   return { costo_total: costo, costo_por_porcion: pp, margen_bruto: mg, utilidad_porcion: precio - pp }
 }
 

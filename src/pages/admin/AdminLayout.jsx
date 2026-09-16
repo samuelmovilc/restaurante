@@ -62,8 +62,8 @@ export default function AdminLayout() {
             ↻ Actualizar Data
           </button>
           
-          <a href="/" style={{ color: 'var(--text3)', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-            ← Pedidos
+          <a href="/" className="btn btn-primary btn-sm" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+            + Tomar Pedido
           </a>
           <a href="/cocina" style={{ color: 'var(--text3)', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
             Cocina

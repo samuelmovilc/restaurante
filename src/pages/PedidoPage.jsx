@@ -8,10 +8,12 @@ export default function PedidoPage() {
   const [config, setConfig]         = useState({})
   const [categorias, setCategorias] = useState([])
   const [mesas, setMesas]           = useState([])
+  const [vendedores, setVendedores] = useState([])
   const [productos, setProductos]   = useState([])
   const [loading, setLoading]       = useState(true)
 
   const [cliente, setCliente]       = useState('')
+  const [vendedorId, setVendedorId] = useState('')
   const [tipo, setTipo]             = useState('mesa')
   const [mesaId, setMesaId]         = useState('')
   const [telefono, setTelefono]     = useState('')
@@ -27,11 +29,13 @@ export default function PedidoPage() {
       api.getConfig(),
       api.getCategorias(),
       api.getMesas(),
+      api.getVendedores(),
       api.getProductos({ activo: 1, visible_formulario: 1 }),
-    ]).then(([cfg, cats, mes, prods]) => {
+    ]).then(([cfg, cats, mes, vends, prods]) => {
       setConfig(cfg.data || {})
       setCategorias(cats.data || [])
       setMesas((mes.data || []).filter(m => m.activa))
+      setVendedores((vends.data || []).filter(v => v.activo))
       setProductos(prods.data || [])
     }).catch(console.error)
       .finally(() => setLoading(false))
@@ -74,6 +78,7 @@ export default function PedidoPage() {
         nombre_cliente: cliente.trim(),
         tipo_pedido: tipo,
         mesa_id: tipo === 'mesa' ? Number(mesaId) : null,
+        vendedor_id: vendedorId ? Number(vendedorId) : null,
         telefono: tipo === 'domicilio' ? telefono : null,
         direccion: tipo === 'domicilio' ? direccion : null,
         observaciones: obs || null,
@@ -87,6 +92,7 @@ export default function PedidoPage() {
       setCarrito([])
       setCliente('')
       setMesaId('')
+      setVendedorId('')
       setTelefono('')
       setDireccion('')
       setObs('')
@@ -131,6 +137,14 @@ export default function PedidoPage() {
             <div className="form-group">
               <label className="label">Nombre del cliente</label>
               <input className="input" placeholder="Ej. Carlos Pérez" value={cliente} onChange={e => setCliente(e.target.value)} />
+            </div>
+
+            <div className="form-group">
+              <label className="label">Mesero / Vendedor</label>
+              <select className="select" value={vendedorId} onChange={e => setVendedorId(e.target.value)}>
+                <option value="">Seleccionar responsable (Opcional)</option>
+                {vendedores.map(v => <option key={v.id} value={v.id}>{v.nombre} ({v.rol})</option>)}
+              </select>
             </div>
 
             <div className="form-group">
