@@ -5,7 +5,7 @@ import { useToast } from '../../hooks/useToast'
 
 const EST_MAP = {
   pendiente:   { label: 'Pendiente',      cls: 'badge-gray'   },
-  preparacion: { label: 'En preparación', cls: 'badge-yellow' },
+  preparacion: { label: 'En preparación', cls: 'badge-primary' },
   listo:       { label: 'Listo',          cls: 'badge-blue'   },
   entregado:   { label: 'Entregado',      cls: 'badge-green'  },
   liquidado:   { label: 'Liquidado',      cls: 'badge-purple' },
@@ -403,7 +403,7 @@ export default function PedidosAdmin() {
               <label className="filter-label">Buscar (# o Cliente)</label>
               <input className="filter-input" type="text" placeholder="Ej: 1054 o María" value={fTexto} onChange={e => setFTexto(e.target.value)} />
             </div>
-            <button className="btn" style={{ background: 'var(--am)', color: 'var(--bg)', fontWeight: 700 }} onClick={() => cargarPedidos()}>Refrescar</button>
+            <button className="btn" style={{ background: 'var(--primary)', color: '#FFFFFF', fontWeight: 700 }} onClick={() => cargarPedidos()}>Refrescar</button>
             <button className="btn btn-ghost" onClick={() => { setFFecha(today()); setFTipo(''); setFEstado(''); setFOrden('desc'); setFTexto(''); cargarPedidos({ fecha: today() }) }}>Limpiar</button>
             
             <div style={{ flex: 1 }} />
@@ -482,7 +482,7 @@ export default function PedidosAdmin() {
                                 imprimirFactura(p)
                               }
                             }}>🖨️ Factura</button>
-                            <button className="btn btn-ghost btn-xs" style={{ padding: '4px 8px', color: 'var(--am)' }} onClick={() => verDetalle(p)}>✏️ Editar</button>
+                            <button className="btn btn-ghost btn-xs" style={{ padding: '4px 8px', color: 'var(--primary)' }} onClick={() => verDetalle(p)}>✏️ Editar</button>
                           </div>
                         </td>
                       </tr>
@@ -588,10 +588,10 @@ export default function PedidosAdmin() {
 
               {/* TOTAL Y ACTUALIZAR */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', fontSize: 15, fontWeight: 800 }}>
-                <span>Total</span><span style={{ color: 'var(--am)', fontSize: 20 }}>{fmt(calcTotal())}</span>
+                <span>Total</span><span style={{ color: 'var(--primary)', fontSize: 20 }}>{fmt(calcTotal())}</span>
               </div>
 
-              <button className="btn" style={{ width: '100%', justifyContent: 'center', marginBottom: 24, background: 'var(--am)', color: 'var(--bg)', fontWeight: 800, padding: 12 }} onClick={actualizarPedido} disabled={guardando || selPedido.estado === 'entregado'}>
+              <button className="btn" style={{ width: '100%', justifyContent: 'center', marginBottom: 24, background: 'var(--primary)', color: '#FFFFFF', fontWeight: 800, padding: 12 }} onClick={actualizarPedido} disabled={guardando || selPedido.estado === 'entregado'}>
                 {guardando ? 'Guardando...' : 'Actualizar pedido'}
               </button>
 

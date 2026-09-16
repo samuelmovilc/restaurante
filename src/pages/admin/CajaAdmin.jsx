@@ -209,7 +209,7 @@ export default function CajaAdmin() {
         </div>
         <div className="stat-card">
           <div className="stat-label">% Utilidad</div>
-          <div className="stat-value" style={{ color: 'var(--am)' }}>{stats.porcentaje_utilidad || 0}%</div>
+          <div className="stat-value" style={{ color: 'var(--primary)' }}>{stats.porcentaje_utilidad || 0}%</div>
           <div className="stat-sub">Margen real del período</div>
         </div>
       </div>
@@ -259,7 +259,7 @@ export default function CajaAdmin() {
                     <td style={{ fontSize: 12, color: 'var(--text3)' }}>{v.hora_venta}</td>
                     <td style={{ fontSize: 12 }}>{v.cliente_nombre || '—'}</td>
                     <td style={{ color: 'var(--az)', fontSize: 12 }}>{v.items_count || 0} ítem(s)</td>
-                    <td><strong style={{ color: 'var(--am)' }}>{fmt(v.total)}</strong></td>
+                    <td><strong style={{ color: 'var(--primary)' }}>{fmt(v.total)}</strong></td>
                     <td style={{ color: 'var(--vd)', fontWeight: 700, fontSize: 12 }}>{fmt(v.total - v.total_costo)}</td>
                     <td style={{ fontSize: 11, color: 'var(--text3)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.metodos_pago_str || '—'}</td>
                     <td>

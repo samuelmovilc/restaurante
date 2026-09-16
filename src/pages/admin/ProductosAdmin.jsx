@@ -125,7 +125,7 @@ export default function ProductosAdmin() {
                     </td>
                     <td><strong>{p.nombre}</strong></td>
                     <td style={{ fontSize: 12, color: 'var(--text3)' }}>{p.categoria_nombre || '—'}</td>
-                    <td><strong style={{ color: 'var(--am)' }}>{fmt(p.precio_venta)}</strong></td>
+                    <td><strong style={{ color: 'var(--primary)' }}>{fmt(p.precio_venta)}</strong></td>
                     <td style={{ color: 'var(--text3)', fontSize: 12 }}>{fmt(p.precio_costo)}</td>
                     <td style={{ fontSize: 11.5, color: 'var(--text3)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descripcion || '—'}</td>
                     <td><span className={`badge ${p.visible_formulario ? 'badge-green' : 'badge-gray'}`}>{p.visible_formulario ? 'Sí' : 'No'}</span></td>
