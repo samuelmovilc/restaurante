@@ -31,7 +31,7 @@ export default function PedidosAdmin() {
   const [fFecha, setFFecha]   = useState(today())
   const [fMesero, setFMesero] = useState('')
   const [fTipo, setFTipo]     = useState('')
-  const [fEstado, setFEstado] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('pendiente') // 'todas', 'pendiente', 'liquidado'
   const [fOrden, setFOrden]   = useState('desc')
   const [fTexto, setFTexto]   = useState('')
 
@@ -41,9 +41,12 @@ export default function PedidosAdmin() {
       const p = { fecha: fFecha, orden: fOrden, ...params }
       if (fMesero) p.vendedor_nombre = fMesero
       if (fTipo)   p.tipo_pedido = fTipo
-      if (fEstado) p.estado = fEstado
       const res = await api.getPedidos(p)
-      setPedidos(res.data || [])
+      let data = res.data || []
+      if (filtroEstado !== 'todas') {
+        data = data.filter(p => p.estado === filtroEstado)
+      }
+      setPedidos(data)
     } catch (e) { toast(e.message, 'error') }
     finally { setLoading(false) }
   }
