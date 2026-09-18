@@ -383,8 +383,8 @@ export default function PedidosAdmin() {
             </div>
             <div className="filter-group">
               <label className="filter-label">Estado</label>
-              <select className="filter-input" value={fEstado} onChange={e => setFEstado(e.target.value)}>
-                <option value="">Todos</option>
+              <select className="filter-input" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+                <option value="todas">Todos</option>
                 <option value="pendiente">Pendiente</option>
                 <option value="liquidado">Liquidado</option>
                 <option value="cancelado">Cancelado</option>
@@ -402,7 +402,7 @@ export default function PedidosAdmin() {
               <input className="filter-input" type="text" placeholder="Ej: 1054 o María" value={fTexto} onChange={e => setFTexto(e.target.value)} />
             </div>
             <button className="btn" style={{ background: 'var(--primary)', color: '#FFFFFF', fontWeight: 700 }} onClick={() => cargarPedidos()}>Refrescar</button>
-            <button className="btn btn-ghost" onClick={() => { setFFecha(today()); setFTipo(''); setFEstado(''); setFOrden('desc'); setFTexto(''); cargarPedidos({ fecha: today() }) }}>Limpiar</button>
+            <button className="btn btn-ghost" onClick={() => { setFFecha(today()); setFTipo(''); setFiltroEstado('todas'); setFOrden('desc'); setFTexto(''); cargarPedidos({ fecha: today() }) }}>Limpiar</button>
             
             <div style={{ flex: 1 }} />
             <button className="btn btn-dark" style={{ padding: '8px 20px' }} onClick={generarComandas} disabled={!selectedIds.length}>
