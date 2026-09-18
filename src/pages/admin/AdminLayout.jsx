@@ -65,9 +65,6 @@ export default function AdminLayout() {
           <a href="/" className="btn btn-primary btn-sm" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
             + Tomar Pedido
           </a>
-          <a href="/cocina" style={{ color: 'var(--text3)', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-            Cocina
-          </a>
           {usuario && (
             <>
               <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 8px' }} />

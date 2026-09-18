@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 
 import LoginPage       from './pages/LoginPage'
 import PedidoPage      from './pages/PedidoPage'
-import CocinaPage      from './pages/CocinaPage'
 import AdminLayout     from './pages/admin/AdminLayout'
 import PedidosAdmin    from './pages/admin/PedidosAdmin'
 import CajaAdmin       from './pages/admin/CajaAdmin'
@@ -33,7 +32,6 @@ export default function App() {
         <Routes>
           {/* Público */}
           <Route path="/"       element={<PedidoPage />} />
-          <Route path="/cocina" element={<CocinaPage />} />
 
           {/* Auth */}
           <Route path="/login" element={
