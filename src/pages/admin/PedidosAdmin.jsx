@@ -169,7 +169,7 @@ export default function PedidosAdmin() {
       // Cambiar estado a liquidado automáticamente
       await api.cambiarEstado(selPedido.id, 'liquidado')
 
-      toast(`Venta ${res.data?.folio || ''} registrada ✓ Tirilla PDF exportada.`, 'success', 4000)
+      toast(`Pedido liquidado con éxito. (Folio: ${res.data?.folio || ''})`, 'success', 4000)
       setSelPedido(null)
       cargarPedidos()
     } catch (e) { toast(e.message, 'error') }
