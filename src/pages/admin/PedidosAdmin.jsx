@@ -5,9 +5,6 @@ import { useToast } from '../../hooks/useToast'
 
 const EST_MAP = {
   pendiente:   { label: 'Pendiente',      cls: 'badge-gray'   },
-  preparacion: { label: 'En preparación', cls: 'badge-primary' },
-  listo:       { label: 'Listo',          cls: 'badge-blue'   },
-  entregado:   { label: 'Entregado',      cls: 'badge-green'  },
   liquidado:   { label: 'Liquidado',      cls: 'badge-purple' },
   cancelado:   { label: 'Cancelado',      cls: 'badge-red'    },
 }
@@ -386,9 +383,7 @@ export default function PedidosAdmin() {
               <select className="filter-input" value={fEstado} onChange={e => setFEstado(e.target.value)}>
                 <option value="">Todos</option>
                 <option value="pendiente">Pendiente</option>
-                <option value="preparacion">En preparación</option>
-                <option value="listo">Listo</option>
-                <option value="entregado">Entregado</option>
+                <option value="liquidado">Liquidado</option>
                 <option value="cancelado">Cancelado</option>
               </select>
             </div>
@@ -467,10 +462,9 @@ export default function PedidosAdmin() {
                         </td>
                         <td style={{ padding: '12px 0' }}><strong>{fmt(p.total)}</strong></td>
                         <td onClick={ev => ev.stopPropagation()} style={{ padding: '12px 0' }}>
-                          <select value={p.estado} onChange={ev => cambiarEstado(p.id, ev.target.value)}
-                            style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '4px 7px', fontSize: 12, fontFamily: 'inherit', cursor: 'pointer', width: 110 }}>
-                            {Object.entries(EST_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                          </select>
+                          <div className={`badge ${EST_MAP[p.estado]?.cls || 'badge-gray'}`} style={{ padding: '6px 12px', fontSize: 12 }}>
+                            {EST_MAP[p.estado]?.label || p.estado}
+                          </div>
                         </td>
                         <td onClick={ev => ev.stopPropagation()} style={{ padding: '12px 0' }}>
                           <div style={{ display: 'flex', gap: 4 }}>
@@ -530,9 +524,9 @@ export default function PedidosAdmin() {
                 <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', fontWeight: 700, marginBottom: 8 }}>Estado actual</div>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <span style={{ 
-                    background: selPedido.estado === 'entregado' ? '#166534' : 'var(--bg3)', 
-                    color: selPedido.estado === 'entregado' ? '#4ade80' : 'var(--text)', 
-                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: selPedido.estado === 'entregado' ? '1px solid #14532d' : '1px solid var(--border)' 
+                    background: selPedido.estado === 'liquidado' ? '#166534' : 'var(--bg3)', 
+                    color: selPedido.estado === 'liquidado' ? '#4ade80' : 'var(--text)', 
+                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: selPedido.estado === 'liquidado' ? '1px solid #14532d' : '1px solid var(--border)' 
                   }}>
                     {EST_MAP[selPedido.estado]?.label}
                   </span>
@@ -591,7 +585,7 @@ export default function PedidosAdmin() {
                 <span>Total</span><span style={{ color: 'var(--primary)', fontSize: 20 }}>{fmt(calcTotal())}</span>
               </div>
 
-              <button className="btn" style={{ width: '100%', justifyContent: 'center', marginBottom: 24, background: 'var(--primary)', color: '#FFFFFF', fontWeight: 800, padding: 12 }} onClick={actualizarPedido} disabled={guardando || selPedido.estado === 'entregado'}>
+              <button className="btn" style={{ width: '100%', justifyContent: 'center', marginBottom: 24, background: 'var(--primary)', color: '#FFFFFF', fontWeight: 800, padding: 12 }} onClick={actualizarPedido} disabled={guardando || selPedido.estado === 'liquidado'}>
                 {guardando ? 'Guardando...' : 'Actualizar pedido'}
               </button>
 
