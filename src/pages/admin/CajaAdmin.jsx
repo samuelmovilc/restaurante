@@ -19,8 +19,9 @@ export default function CajaAdmin() {
     try {
       const params = { fecha_inicio: fi, fecha_fin: ff }
       if (est) params.estado = est
-      const [v] = await Promise.all([api.getVentas(params)])
+      const [v, sRes] = await Promise.all([api.getVentas(params), api.getVentaStats(params)])
       const ventasData = v.data || []
+      const statsBackend = sRes.data || {}
       setVentas(ventasData)
       
       const aceptadas = ventasData.filter(x => x.estado === 'ACEPTADA')
@@ -33,7 +34,8 @@ export default function CajaAdmin() {
         total_ventas: aceptadas.length,
         total_vendido: totalVendido,
         utilidad_bruta: utilidadBruta,
-        porcentaje_utilidad: porcentaje
+        porcentaje_utilidad: porcentaje,
+        categorias: statsBackend.categorias || []
       })
     } catch (e) { toast(e.message, 'error') }
     finally { setLoading(false) }
