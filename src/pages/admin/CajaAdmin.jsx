@@ -173,7 +173,31 @@ export default function CajaAdmin() {
       
       doc.text('MARGEN:', 10, y)
       doc.text(stats.porcentaje_utilidad + '%', 70, y, { align: 'right' })
-      y += 10
+      y += 8
+      
+      // CATEGORIAS
+      if (stats.categorias && stats.categorias.length > 0) {
+        y += 4
+        doc.line(10, y, 70, y)
+        y += 6
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(10)
+        doc.text('VENTAS POR CATEGORÍA', 40, y, { align: 'center' })
+        y += 6
+        doc.setFontSize(8)
+        doc.text('CATEGORÍA', 10, y)
+        doc.text('CANT', 46, y)
+        doc.text('TOTAL', 70, y, { align: 'right' })
+        y += 4
+        doc.setFont('helvetica', 'normal')
+        stats.categorias.forEach(c => {
+          doc.text(String(c.categoria || 'Otros').substring(0, 15), 10, y)
+          doc.text(String(c.cantidad), 48, y)
+          doc.text(fmt(c.total), 70, y, { align: 'right' })
+          y += 5
+        })
+      }
+      y += 4
       
       doc.setFontSize(8)
       doc.setFont('helvetica', 'normal')
