@@ -121,10 +121,36 @@ export default function PedidosAdmin() {
     finally { setGuardando(false) }
   }
 
-  async function cambiarEstado(id, estado) {
+  // Anula un pedido inteligentemente:
+  // - Si estaba liquidado (entregado): busca y anula la venta asociada primero (para que no cuente en Caja)
+  // - En cualquier caso: marca el pedido como cancelado
+  async function anularPedido(ped) {
+    const nombre = ped.nombre_cliente || `Pedido #${ped.numero_pedido}`
+    const yaLiquidado = ped.estado === 'entregado'
+    const msg = yaLiquidado
+      ? `¿Anular pedido #${ped.numero_pedido} de ${nombre}?\n\n⚠️ Este pedido YA FUE LIQUIDADO. Se anulará también la venta en Caja (no sumará en el cierre).`
+      : `¿Anular pedido #${ped.numero_pedido} de ${nombre}?`
+    if (!window.confirm(msg)) return
     try {
-      await api.cambiarEstado(id, estado)
-      toast('Estado actualizado')
+      // Si estaba liquidado, primero anulamos la venta via /api/ventas/:id/anular
+      // El backend de anular venta ya marca también el pedido como cancelado
+      if (yaLiquidado) {
+        // Buscar la venta asociada a este pedido
+        const ventasRes = await api.getVentas({ pedido_id: ped.id })
+        const ventaActiva = (ventasRes.data || []).find(v => v.estado === 'ACEPTADA' && v.pedido_id === ped.id)
+        if (ventaActiva) {
+          await api.anularVenta(ventaActiva.id)
+          toast(`✅ Venta y pedido #${ped.numero_pedido} anulados`, 'success')
+        } else {
+          // Venta no encontrada o ya anulada, solo cancelar el pedido
+          await api.cambiarEstado(ped.id, 'cancelado')
+          toast(`Pedido #${ped.numero_pedido} cancelado`, 'success')
+        }
+      } else {
+        await api.cambiarEstado(ped.id, 'cancelado')
+        toast(`Pedido #${ped.numero_pedido} cancelado`, 'success')
+      }
+      setSelPedido(null)
       cargarPedidos()
     } catch (e) { toast(e.message, 'error') }
   }
@@ -483,6 +509,9 @@ export default function PedidosAdmin() {
                               }
                             }}>🖨️ Factura</button>
                             <button className="btn btn-ghost btn-xs" style={{ padding: '4px 8px', color: 'var(--primary)' }} onClick={() => verDetalle(p)}>✏️ Editar</button>
+                            {p.estado !== 'cancelado' && (
+                              <button className="btn btn-ghost btn-xs" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => anularPedido(p)}>🗑️</button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -514,12 +543,9 @@ export default function PedidosAdmin() {
                   <p>{selPedido.nombre_cliente || '—'} · {TIPO_LABEL[selPedido.tipo_pedido]}</p>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--red)', background: 'rgba(239,68,68,0.1)' }} onClick={async () => {
-                    if (window.confirm("¿Seguro que deseas anular este pedido?")) {
-                      await cambiarEstado(selPedido.id, 'cancelado')
-                      setSelPedido(null)
-                    }
-                  }}>🗑️ Anular</button>
+                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--red)', background: 'rgba(239,68,68,0.1)' }}
+                    disabled={selPedido.estado === 'cancelado'}
+                    onClick={() => anularPedido(selPedido)}>🗑️ Anular</button>
                   <button className="btn btn-ghost btn-sm" onClick={() => setSelPedido(null)}>✕ Cerrar</button>
                 </div>
               </div>

@@ -12,7 +12,7 @@ export default function CajaAdmin() {
   const [loading, setLoading] = useState(true)
   const [fi, setFi] = useState(today())
   const [ff, setFf] = useState(today())
-  const [est, setEst] = useState('')
+  const [est, setEst] = useState('ACEPTADA') // Por defecto solo ventas activas
 
   async function cargar() {
     setLoading(true)
@@ -236,7 +236,7 @@ export default function CajaAdmin() {
         <button className="btn btn-success btn-sm" onClick={exportar} style={{ marginLeft: 8 }}>Exportar Excel</button>
         <button className="btn btn-danger btn-sm" onClick={exportarPDF} style={{ marginLeft: 8 }}>Exportar PDF</button>
         <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: 'var(--text3)' }}>
-          Total: {fmt(stats.total_vendido)} · {ventas.length} ventas
+          Total: {fmt(stats.total_vendido)} · {stats.total_ventas || 0} venta{(stats.total_ventas !== 1) ? 's' : ''} aceptadas
         </span>
       </div>
 
