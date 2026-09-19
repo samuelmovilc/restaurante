@@ -3,9 +3,11 @@ import { jsPDF } from 'jspdf'
 import { api, fmt, fmtF, today } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
 
+// NOTA: La DB usa 'entregado' como estado cuando un pedido es liquidado/pagado.
+// El frontend muestra 'entregado' como "Liquidado" para el usuario.
 const EST_MAP = {
   pendiente:   { label: 'Pendiente',      cls: 'badge-gray'   },
-  liquidado:   { label: 'Liquidado',      cls: 'badge-purple' },
+  entregado:   { label: 'Liquidado',      cls: 'badge-purple' },
   cancelado:   { label: 'Cancelado',      cls: 'badge-red'    },
 }
 const TIPO_LABEL = { mesa: 'Mesa', domicilio: 'Domicilio', venta_interna: 'Interna', credito: 'Crédito' }
@@ -31,7 +33,7 @@ export default function PedidosAdmin() {
   const [fFecha, setFFecha]   = useState(today())
   const [fMesero, setFMesero] = useState('')
   const [fTipo, setFTipo]     = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('pendiente') // 'todas', 'pendiente', 'liquidado'
+  const [filtroEstado, setFiltroEstado] = useState('pendiente') // 'todas', 'pendiente', 'entregado', 'cancelado'
   const [fOrden, setFOrden]   = useState('desc')
   const [fTexto, setFTexto]   = useState('')
 
@@ -41,12 +43,13 @@ export default function PedidosAdmin() {
       const p = { fecha: fFecha, orden: fOrden, ...params }
       if (fMesero) p.vendedor_nombre = fMesero
       if (fTipo)   p.tipo_pedido = fTipo
+      // Enviar filtro de estado al backend para que filtre en la DB
+      // 'liquidado' en el UI = 'entregado' en la DB
+      const estadoDB = (params.filtroEstado ?? filtroEstado)
+      if (estadoDB === 'liquidado') p.estado = 'entregado'
+      else if (estadoDB !== 'todas') p.estado = estadoDB
       const res = await api.getPedidos(p)
-      let data = res.data || []
-      if (filtroEstado !== 'todas') {
-        data = data.filter(p => p.estado === filtroEstado)
-      }
-      setPedidos(data)
+      setPedidos(res.data || [])
     } catch (e) { toast(e.message, 'error') }
     finally { setLoading(false) }
   }
@@ -54,7 +57,8 @@ export default function PedidosAdmin() {
   useEffect(() => {
     cargarPedidos()
     api.getMetodosPago().then(r => setMetodosPago(r.data || [])).catch(() => {})
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtroEstado, fFecha, fTipo, fOrden])
 
   function verDetalle(ped) {
     const items = typeof ped.items === 'string' ? JSON.parse(ped.items || '[]') : (ped.items || [])
@@ -168,9 +172,8 @@ export default function PedidosAdmin() {
       
       // Auto-generar PDF de la factura
       descargarFacturaPDF(selPedido, mpsConTipo, total, cambio)
-      
-      // Cambiar estado a liquidado automáticamente
-      await api.cambiarEstado(selPedido.id, 'liquidado')
+      // NOTA: El backend (ventas.js) ya actualiza el estado del pedido a 'entregado'
+      // automáticamente al crear la venta. NO hay que llamar cambiarEstado aquí.
 
       toast(`Pedido liquidado con éxito. (Folio: ${res.data?.folio || ''})`, 'success', 4000)
       setSelPedido(null)
@@ -354,7 +357,7 @@ export default function PedidosAdmin() {
           {/* STATS */}
           <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
             {[
-              { label: 'Órdenes / Estado General', value: `${pedidosFiltrados.filter(p => p.estado === 'liquidado').length} Liquidados`, sub: `${pedidosFiltrados.filter(p => p.estado !== 'liquidado' && p.estado !== 'cancelado').length} Pendientes por liquidar` },
+              { label: 'Órdenes / Estado General', value: `${pedidosFiltrados.filter(p => p.estado === 'entregado').length} Liquidados`, sub: `${pedidosFiltrados.filter(p => p.estado === 'pendiente').length} Pendientes por liquidar` },
               { label: 'Pedidos en Filtro', value: pedidosFiltrados.length, sub: 'Viendo actualmente' },
             ].map((s, i) => (
               <div key={i} className="stat-card" style={{ minWidth: 220 }}>
@@ -386,7 +389,7 @@ export default function PedidosAdmin() {
               <select className="filter-input" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
                 <option value="todas">Todos</option>
                 <option value="pendiente">Pendiente</option>
-                <option value="liquidado">Liquidado</option>
+                <option value="entregado">Liquidado</option>
                 <option value="cancelado">Cancelado</option>
               </select>
             </div>
@@ -527,9 +530,9 @@ export default function PedidosAdmin() {
                 <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text3)', fontWeight: 700, marginBottom: 8 }}>Estado actual</div>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <span style={{ 
-                    background: selPedido.estado === 'liquidado' ? '#166534' : 'var(--bg3)', 
-                    color: selPedido.estado === 'liquidado' ? '#4ade80' : 'var(--text)', 
-                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: selPedido.estado === 'liquidado' ? '1px solid #14532d' : '1px solid var(--border)' 
+                    background: selPedido.estado === 'entregado' ? '#166534' : 'var(--bg3)', 
+                    color: selPedido.estado === 'entregado' ? '#4ade80' : 'var(--text)', 
+                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: selPedido.estado === 'entregado' ? '1px solid #14532d' : '1px solid var(--border)' 
                   }}>
                     {EST_MAP[selPedido.estado]?.label}
                   </span>
@@ -588,12 +591,12 @@ export default function PedidosAdmin() {
                 <span>Total</span><span style={{ color: 'var(--primary)', fontSize: 20 }}>{fmt(calcTotal())}</span>
               </div>
 
-              <button className="btn" style={{ width: '100%', justifyContent: 'center', marginBottom: 24, background: 'var(--primary)', color: '#FFFFFF', fontWeight: 800, padding: 12 }} onClick={actualizarPedido} disabled={guardando || selPedido.estado === 'liquidado'}>
+              <button className="btn" style={{ width: '100%', justifyContent: 'center', marginBottom: 24, background: 'var(--primary)', color: '#FFFFFF', fontWeight: 800, padding: 12 }} onClick={actualizarPedido} disabled={guardando || selPedido.estado === 'entregado'}>
                 {guardando ? 'Guardando...' : 'Actualizar pedido'}
               </button>
 
               {/* LIQUIDACIÓN SIMPLIFICADA */}
-              {selPedido.estado === 'liquidado' ? (
+              {selPedido.estado === 'entregado' ? (
                 <div style={{ padding: '24px', background: 'rgba(22, 101, 52, 0.2)', border: '1px solid #14532d', borderRadius: 12, textAlign: 'center', marginTop: 10 }}>
                   <div style={{ fontSize: 24, marginBottom: 8 }}>✅</div>
                   <h4 style={{ color: '#4ade80', fontWeight: 800, marginBottom: 4 }}>VENTA FACTURADA</h4>
