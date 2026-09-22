@@ -14,6 +14,7 @@ export default function ProductosAdmin() {
   const [editId, setEditId]         = useState(null)
   const [guardando, setGuardando]   = useState(false)
   const [importResult, setImportResult] = useState(null)
+  const [subiendoImg, setSubiendoImg] = useState(false)
 
   async function cargar() {
     setLoading(true)
@@ -46,6 +47,22 @@ export default function ProductosAdmin() {
       cargar()
     } catch (e) { toast(e.message, 'error') }
     finally { setGuardando(false) }
+  }
+
+  async function handleImageUpload(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setSubiendoImg(true)
+    try {
+      const res = await api.uploadImage(file)
+      setForm(f => ({ ...f, imagen_url: res.data.url }))
+      toast('Imagen subida correctamente')
+    } catch (err) {
+      toast(err.message, 'error')
+    } finally {
+      setSubiendoImg(false)
+      e.target.value = ''
+    }
   }
 
   async function eliminar(id, nombre) {
@@ -175,8 +192,12 @@ export default function ProductosAdmin() {
                 <input className="input" type="number" value={form.precio_costo} onChange={e => setForm(f => ({ ...f, precio_costo: e.target.value }))} placeholder="12000" />
               </div>
               <div className="form-group" style={{ gridColumn: '1/-1' }}>
-                <label className="label">URL de imagen (Cloudinary, etc.)</label>
-                <input className="input" value={form.imagen_url} onChange={e => setForm(f => ({ ...f, imagen_url: e.target.value }))} placeholder="https://res.cloudinary.com/..." />
+                <label className="label">Imagen del producto</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} disabled={subiendoImg} className="input" style={{ padding: '4px' }} />
+                  {subiendoImg && <span style={{ fontSize: 12, color: 'var(--primary)' }}>Subiendo...</span>}
+                </div>
+                <input className="input" value={form.imagen_url} onChange={e => setForm(f => ({ ...f, imagen_url: e.target.value }))} placeholder="O si prefieres, pega una URL (https://...)" />
                 {form.imagen_url && <img src={form.imagen_url} alt="" style={{ marginTop: 8, height: 80, borderRadius: 7, objectFit: 'cover', border: '1px solid var(--border)' }} />}
               </div>
               <div className="form-group">

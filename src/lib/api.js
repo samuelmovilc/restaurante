@@ -74,6 +74,16 @@ export const api = {
   updateProducto:  (id, data) => request(`/api/productos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteProducto:  (id)   => request(`/api/productos/${id}`, { method: 'DELETE' }),
   importProductos: (data) => request('/api/productos/importar', { method: 'POST', body: JSON.stringify({ productos: data }) }),
+  uploadImage:     async (file) => {
+    const fd = new FormData();
+    fd.append('imagen', file);
+    const token = localStorage.getItem('token');
+    const headers = { ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+    const res = await fetch(`${BASE}/api/upload`, { method: 'POST', body: fd, headers });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error?.message || 'Error al subir imagen');
+    return data;
+  },
 
   // PEDIDOS
   getPedidos:      (params = {}) => request('/api/pedidos?' + new URLSearchParams(params)),
