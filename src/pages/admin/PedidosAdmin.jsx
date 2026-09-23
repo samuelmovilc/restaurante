@@ -371,28 +371,27 @@ export default function PedidosAdmin() {
   return (
     <div>
       <ToastContainer />
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <h2>Pedidos</h2>
           <p>Gestión de órdenes activas y liquidación.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          {[
+            { label: 'Estado General', value: `${pedidosFiltrados.filter(p => p.estado === 'entregado').length} Liq`, sub: `${pedidosFiltrados.filter(p => p.estado === 'pendiente').length} Pendientes` },
+            { label: 'En Filtro', value: pedidosFiltrados.length, sub: 'Actual' },
+          ].map((s, i) => (
+            <div key={i} className="stat-card" style={{ minWidth: 140, padding: '10px 14px' }}>
+              <div className="stat-label" style={{ fontSize: 9, marginBottom: 4 }}>{s.label}</div>
+              <div className="stat-value" style={{ fontSize: 16 }}>{s.value}</div>
+              <div className="stat-sub" style={{ fontSize: 10, marginTop: 2 }}>{s.sub}</div>
+            </div>
+          ))}
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* STATS */}
-          <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
-            {[
-              { label: 'Órdenes / Estado General', value: `${pedidosFiltrados.filter(p => p.estado === 'entregado').length} Liquidados`, sub: `${pedidosFiltrados.filter(p => p.estado === 'pendiente').length} Pendientes por liquidar` },
-              { label: 'Pedidos en Filtro', value: pedidosFiltrados.length, sub: 'Viendo actualmente' },
-            ].map((s, i) => (
-              <div key={i} className="stat-card" style={{ minWidth: 220 }}>
-                <div className="stat-label">{s.label}</div>
-                <div className="stat-value">{s.value}</div>
-                <div className="stat-sub">{s.sub}</div>
-              </div>
-            ))}
-          </div>
 
           {/* FILTROS */}
           <div className="filters-bar" style={{ marginBottom: 24 }}>

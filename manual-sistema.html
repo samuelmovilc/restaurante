@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual del Sistema — Mi Restaurante POS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0a0a0f;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 60px 40px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.3) 0%, transparent 70%);
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(99,102,241,0.2);
+    border: 1px solid rgba(99,102,241,0.4);
+    color: #818cf8;
+    padding: 6px 18px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, #fff 0%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .hero p {
+    font-size: 16px;
+    color: #94a3b8;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+    position: relative;
+  }
+
+  /* CONTAINER */
+  .container { max-width: 1100px; margin: 0 auto; padding: 60px 24px; }
+
+  /* SECTION TITLE */
+  .section-title {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .section-title h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #f1f5f9;
+    margin-bottom: 8px;
+  }
+  .section-title p { color: #64748b; font-size: 14px; }
+
+  /* FLOW STEPS */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+  .flow::before {
+    content: '';
+    position: absolute;
+    left: 48px;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+    z-index: 0;
+  }
+
+  .step {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    padding: 32px 0;
+    position: relative;
+    z-index: 1;
+  }
+  .step-num {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 900;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 0 0 4px #0a0a0f;
+  }
+  .step-body {
+    flex: 1;
+    background: #13131f;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+    padding: 24px 28px;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+  .step-body:hover { border-color: rgba(99,102,241,0.3); }
+  .step-body::before {
+    content: '';
+    position: absolute;
+    left: -8px; top: 20px;
+    width: 16px; height: 16px;
+    background: #13131f;
+    border-left: 1px solid rgba(255,255,255,0.07);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    transform: rotate(45deg);
+  }
+
+  .step-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .step-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #f1f5f9;
+    margin-bottom: 10px;
+  }
+  .step-desc {
+    font-size: 14px;
+    color: #94a3b8;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .tag {
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .tag-blue { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); color: #60a5fa; }
+  .tag-green { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #34d399; }
+  .tag-purple { background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); color: #a78bfa; }
+  .tag-orange { background: rgba(249,115,22,0.1); border-color: rgba(249,115,22,0.3); color: #fb923c; }
+  .tag-red { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #f87171; }
+  .tag-cyan { background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #22d3ee; }
+
+  /* STEP COLORS */
+  .s1 .step-num { background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff; }
+  .s1 .step-label { color: #818cf8; }
+
+  .s2 .step-num { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; }
+  .s2 .step-label { color: #a78bfa; }
+
+  .s3 .step-num { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; }
+  .s3 .step-label { color: #22d3ee; }
+
+  .s4 .step-num { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+  .s4 .step-label { color: #fbbf24; }
+
+  .s5 .step-num { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+  .s5 .step-label { color: #34d399; }
+
+  .s6 .step-num { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
+  .s6 .step-label { color: #60a5fa; }
+
+  /* DETAIL BOX */
+  .detail-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 12px;
+  }
+  .detail-box p { font-size: 13px; color: #64748b; margin-bottom: 6px; }
+  .detail-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 13px;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row .icon { font-size: 16px; width: 24px; text-align: center; }
+  .detail-row .text { color: #cbd5e1; }
+  .detail-row .val { margin-left: auto; }
+
+  /* STATUS PILLS */
+  .status-flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .status-pill {
+    padding: 5px 14px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .pill-gray { background: rgba(100,116,139,0.2); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
+  .pill-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+  .pill-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .arrow { color: #475569; font-size: 18px; }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+    margin: 60px 0;
+  }
+
+  /* STATES TABLE */
+  .states-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .state-card {
+    background: #13131f;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .state-card-icon { font-size: 28px; margin-bottom: 10px; }
+  .state-card-name { font-weight: 700; font-size: 15px; color: #f1f5f9; margin-bottom: 4px; }
+  .state-card-db { font-family: monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+  .state-card-desc { font-size: 13px; color: #64748b; line-height: 1.6; }
+
+  /* ANULAR SECTION */
+  .anular-box {
+    background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.04));
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 16px;
+    padding: 28px;
+    margin-top: 32px;
+  }
+  .anular-box h3 { color: #f87171; font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+  .anular-box p { color: #94a3b8; font-size: 14px; line-height: 1.7; margin-bottom: 16px; }
+
+  .anular-scenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .scenario { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 16px; border: 1px solid rgba(255,255,255,0.05); }
+  .scenario h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .scenario ul { list-style: none; }
+  .scenario ul li { font-size: 12px; color: #64748b; padding: 4px 0; display: flex; gap: 8px; }
+  .scenario ul li::before { content: '→'; color: #f87171; }
+
+  /* CREDITO BOX */
+  .credito-box {
+    background: linear-gradient(135deg, rgba(6,182,212,0.08), rgba(6,182,212,0.04));
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 16px;
+    padding: 28px;
+    margin-top: 20px;
+  }
+  .credito-box h3 { color: #22d3ee; font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+  .credito-box p { color: #94a3b8; font-size: 14px; line-height: 1.7; }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    padding: 40px 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    color: #374151;
+    font-size: 12px;
+  }
+  .footer span { color: #6366f1; }
+
+  @media (max-width: 640px) {
+    .flow::before { left: 28px; }
+    .step-num { width: 44px; height: 44px; min-width: 44px; font-size: 16px; }
+    .step { gap: 16px; }
+    .anular-scenarios { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">📋 Manual de Operación</div>
+  <h1>Sistema POS — Mi Restaurante</h1>
+  <p>Guía visual completa del flujo de trabajo: desde tomar un pedido hasta el cierre de caja al final del día.</p>
+</div>
+
+<div class="container">
+
+  <!-- FLUJO PRINCIPAL -->
+  <div class="section-title">
+    <h2>⚡ Flujo de Operación</h2>
+    <p>6 pasos simples para operar el restaurante de principio a fin</p>
+  </div>
+
+  <div class="flow">
+
+    <!-- PASO 1 -->
+    <div class="step s1">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-label">⚙️ Una sola vez</div>
+        <div class="step-title">Configuración del Negocio</div>
+        <div class="step-desc">
+          Antes de comenzar a vender, configura los datos básicos del restaurante: nombre del negocio, datos de contacto, mesas disponibles, métodos de pago aceptados y vendedores/meseros.
+        </div>
+        <div class="detail-box">
+          <div class="detail-row"><span class="icon">🏪</span><span class="text">Nombre del negocio y datos</span></div>
+          <div class="detail-row"><span class="icon">🪑</span><span class="text">Número y nombres de mesas</span></div>
+          <div class="detail-row"><span class="icon">💳</span><span class="text">Métodos de pago (Efectivo, Transferencia, Crédito…)</span></div>
+          <div class="detail-row"><span class="icon">👤</span><span class="text">Vendedores / Meseros</span></div>
+        </div>
+        <div class="tags">
+          <span class="tag tag-purple">Módulo: Configuración</span>
+          <span class="tag tag-blue">Se hace una sola vez</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 2 -->
+    <div class="step s2">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-label">🛍️ Catálogo</div>
+        <div class="step-title">Agregar Productos</div>
+        <div class="step-desc">
+          Registra todos los productos del menú con su nombre, precio de venta y precio de costo. El precio de costo permite calcular la utilidad real al final del día.
+        </div>
+        <div class="detail-box">
+          <div class="detail-row"><span class="icon">🍗</span><span class="text">Nombre del producto</span></div>
+          <div class="detail-row"><span class="icon">💰</span><span class="text">Precio de venta → lo que paga el cliente</span></div>
+          <div class="detail-row"><span class="icon">📦</span><span class="text">Precio de costo → lo que costó producirlo</span></div>
+          <div class="detail-row"><span class="icon">✅</span><span class="text">Estado activo/inactivo → controla si aparece en el menú</span></div>
+        </div>
+        <div class="tags">
+          <span class="tag tag-purple">Módulo: Productos</span>
+          <span class="tag tag-orange">Se actualiza cuando cambia el menú</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 3 -->
+    <div class="step s3">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-label">📝 Operación diaria</div>
+        <div class="step-title">Tomar el Pedido</div>
+        <div class="step-desc">
+          El mesero o el cliente registra el pedido a través del formulario. Se escoge el tipo de pedido, la mesa, el cliente y los productos. Al enviarlo, queda registrado automáticamente.
+        </div>
+        <div class="detail-box">
+          <div class="detail-row"><span class="icon">🪑</span><span class="text">Tipo: Mesa / Domicilio / Interno / Crédito</span></div>
+          <div class="detail-row"><span class="icon">👤</span><span class="text">Nombre del cliente</span></div>
+          <div class="detail-row"><span class="icon">🛒</span><span class="text">Productos seleccionados + cantidades</span></div>
+          <div class="detail-row"><span class="icon">📋</span><span class="text">Observaciones (sin cebolla, extra salsa…)</span></div>
+        </div>
+        <div class="status-flow">
+          <span>Resultado:</span>
+          <span class="status-pill pill-gray">🔵 Pedido → PENDIENTE</span>
+        </div>
+        <div class="tags" style="margin-top:12px">
+          <span class="tag tag-cyan">Formulario público</span>
+          <span class="tag tag-blue">Botón "Tomar Pedido" en el admin</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 4 -->
+    <div class="step s4">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-label">👀 Supervisión</div>
+        <div class="step-title">Ver Pedidos en el Admin</div>
+        <div class="step-desc">
+          En el módulo de Pedidos del panel de administración aparecen todos los pedidos del día. Puedes filtrar por fecha, tipo y estado. Los pedidos pendientes son los que aún no se han cobrado.
+        </div>
+        <div class="detail-box">
+          <div class="detail-row"><span class="icon">📋</span><span class="text">Número de pedido, hora, mesa, mesero</span></div>
+          <div class="detail-row"><span class="icon">🔍</span><span class="text">Filtros: Pendientes | Liquidados | Todos | Por fecha</span></div>
+          <div class="detail-row"><span class="icon">✏️</span><span class="text">Editar productos del pedido antes de cobrar</span></div>
+          <div class="detail-row"><span class="icon">🖨️</span><span class="text">Generar comanda para cocina</span></div>
+        </div>
+        <div class="status-flow">
+          <span class="status-pill pill-gray">Pendiente</span>
+          <span class="arrow">→</span>
+          <span style="font-size:13px;color:#64748b">Clic en el pedido para abrir el carrito →</span>
+        </div>
+        <div class="tags" style="margin-top:12px">
+          <span class="tag tag-orange">Módulo: Pedidos</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 5 -->
+    <div class="step s5">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <div class="step-label">💳 ¡El momento del cobro!</div>
+        <div class="step-title">Liquidar el Pedido</div>
+        <div class="step-desc">
+          Al seleccionar un pedido en la tabla, se abre el carrito en el panel lateral derecho. Ahí se confirman los productos, se selecciona el método de pago, se ingresa el monto y se cobra.
+        </div>
+        <div class="detail-box">
+          <div class="detail-row"><span class="icon">🛒</span><span class="text">Revisar/editar productos del pedido</span></div>
+          <div class="detail-row"><span class="icon">💵</span><span class="text">Seleccionar método de pago + monto</span></div>
+          <div class="detail-row"><span class="icon">🔄</span><span class="text">El sistema calcula el cambio/vueltas automáticamente</span></div>
+          <div class="detail-row"><span class="icon">✅</span><span class="text">Clic en "PAGAR Y LIQUIDAR"</span></div>
+        </div>
+        <div class="status-flow">
+          <span class="status-pill pill-gray">Pendiente</span>
+          <span class="arrow">→→</span>
+          <span class="status-pill pill-green">✅ Liquidado</span>
+        </div>
+        <div style="margin-top:12px; padding: 12px 14px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 10px; font-size: 13px; color: #64748b; line-height: 1.6;">
+          🔒 <strong style="color:#34d399">Transacción atómica:</strong> El sistema guarda la venta Y actualiza el pedido al mismo tiempo. Si algo falla, ningún dato se guarda a medias. Se genera el PDF de la factura automáticamente.
+        </div>
+        <div class="tags" style="margin-top:12px">
+          <span class="tag tag-green">Módulo: Pedidos → Carrito lateral</span>
+          <span class="tag tag-green">PDF factura automático</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 6 -->
+    <div class="step s6">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <div class="step-label">📊 Cierre del día</div>
+        <div class="step-title">Caja — Historial y Cierre</div>
+        <div class="step-desc">
+          El módulo de Caja muestra en tiempo real todas las ventas del día. Las estadísticas de total vendido, utilidad bruta y margen de ganancia se calculan solo con ventas válidas (ACEPTADA). Al final del día se exporta el cierre.
+        </div>
+        <div class="detail-box">
+          <div class="detail-row"><span class="icon">💰</span><span class="text">Total vendido del día</span><span class="val tag tag-green">Solo ACEPTADAS</span></div>
+          <div class="detail-row"><span class="icon">📈</span><span class="text">Utilidad bruta (precio venta − costo)</span><span class="val tag tag-green">Solo ACEPTADAS</span></div>
+          <div class="detail-row"><span class="icon">%</span><span class="text">Margen de ganancia del período</span></div>
+          <div class="detail-row"><span class="icon">📋</span><span class="text">Historial completo por folio y hora</span></div>
+        </div>
+        <div class="tags" style="margin-top:12px">
+          <span class="tag tag-blue">Módulo: Caja</span>
+          <span class="tag tag-blue">Exportar Excel (cierre por método)</span>
+          <span class="tag tag-blue">Exportar PDF 80mm</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end flow -->
+
+  <div class="divider"></div>
+
+  <!-- ESTADOS DEL SISTEMA -->
+  <div class="section-title">
+    <h2>🚦 Estados del Sistema</h2>
+    <p>Cómo el sistema clasifica pedidos y ventas internamente</p>
+  </div>
+
+  <div class="states-grid">
+    <div class="state-card">
+      <div class="state-card-icon">🔵</div>
+      <div class="state-card-name">Pendiente</div>
+      <div class="state-card-db" style="background:rgba(100,116,139,0.15);color:#94a3b8">pedido: pendiente</div>
+      <div class="state-card-desc">Pedido recibido pero aún no cobrado. Aparece en la tabla de pedidos activos. El mesero debe liquidarlo.</div>
+    </div>
+    <div class="state-card">
+      <div class="state-card-icon">💚</div>
+      <div class="state-card-name">Liquidado</div>
+      <div class="state-card-db" style="background:rgba(16,185,129,0.1);color:#34d399">pedido: entregado</div>
+      <div class="state-card-desc">Pedido cobrado y entregado. Tiene una venta ACEPTADA asociada. Se muestra como "Liquidado" en el panel.</div>
+    </div>
+    <div class="state-card">
+      <div class="state-card-icon">❌</div>
+      <div class="state-card-name">Cancelado</div>
+      <div class="state-card-db" style="background:rgba(239,68,68,0.1);color:#f87171">pedido: cancelado</div>
+      <div class="state-card-desc">Pedido anulado. Nunca se borra — queda en la base de datos para auditoría. NO suma en las ventas del día.</div>
+    </div>
+    <div class="state-card">
+      <div class="state-card-icon">✅</div>
+      <div class="state-card-name">Venta Aceptada</div>
+      <div class="state-card-db" style="background:rgba(16,185,129,0.1);color:#34d399">venta: ACEPTADA</div>
+      <div class="state-card-desc">Venta válida. Aparece en Caja y suma en todas las estadísticas del día. Tiene su folio único (ej: VENTA-260919-001).</div>
+    </div>
+    <div class="state-card">
+      <div class="state-card-icon">🚫</div>
+      <div class="state-card-name">Venta Anulada</div>
+      <div class="state-card-db" style="background:rgba(239,68,68,0.1);color:#f87171">venta: ANULADA</div>
+      <div class="state-card-desc">Venta cancelada después de ser cobrada. Permanece en el historial para auditoría pero NO suma en totales ni utilidad.</div>
+    </div>
+    <div class="state-card">
+      <div class="state-card-icon">💳</div>
+      <div class="state-card-name">Crédito → Cartera</div>
+      <div class="state-card-db" style="background:rgba(6,182,212,0.1);color:#22d3ee">cartera: pendiente</div>
+      <div class="state-card-desc">Si el método de pago es Crédito, la venta se registra normalmente en Caja Y además se agrega un registro en el módulo de Cartera para cobrar después.</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ANULACION -->
+  <div class="section-title">
+    <h2>🗑️ Cómo Funciona la Anulación</h2>
+    <p>El sistema maneja 2 escenarios de anulación automáticamente</p>
+  </div>
+
+  <div class="anular-box">
+    <h3>🛡️ Regla de oro: Nada se borra, todo se anula</h3>
+    <p>Un pedido anulado queda marcado como "cancelado" para siempre en la base de datos. Esto protege la integridad del historial y permite auditorías. La anulación solo cambia el estado — nunca elimina registros.</p>
+
+    <div class="anular-scenarios">
+      <div class="scenario">
+        <h4 style="color:#fbbf24">⚡ Escenario A — Pedido Pendiente</h4>
+        <ul>
+          <li>El pedido nunca fue cobrado</li>
+          <li>Se hace clic en 🗑️ Anular</li>
+          <li>El pedido pasa a "cancelado"</li>
+          <li>No existía venta → nada que revertir en Caja</li>
+          <li>Desaparece del filtro "Pendientes"</li>
+        </ul>
+      </div>
+      <div class="scenario">
+        <h4 style="color:#f87171">🔴 Escenario B — Pedido ya Liquidado</h4>
+        <ul>
+          <li>El pedido ya fue cobrado y tiene venta ACEPTADA</li>
+          <li>Se hace clic en 🗑️ Anular (pide confirmación extra)</li>
+          <li>La venta pasa a "ANULADA" en Caja</li>
+          <li>El pedido pasa a "cancelado"</li>
+          <li>Los totales de Caja se actualizan automáticamente</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREDITO -->
+  <div class="credito-box">
+    <h3>💳 Ventas a Crédito → Módulo Cartera</h3>
+    <p>
+      Cuando se selecciona el método de pago <strong style="color:#22d3ee">Crédito</strong> al liquidar un pedido, el sistema hace dos cosas simultáneamente:<br><br>
+      <strong style="color:#e2e8f0">1.</strong> Registra la venta normalmente en <strong>Caja</strong> (aparece como ACEPTADA).<br>
+      <strong style="color:#e2e8f0">2.</strong> Crea automáticamente un registro en el módulo de <strong>Cartera</strong> con el nombre del cliente, el número de pedido, los productos y el monto pendiente de cobro.<br><br>
+      Así puedes hacer seguimiento de todas las deudas de empleados o clientes frecuentes desde el módulo de Cartera.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- RESUMEN RELACIONES DB -->
+  <div class="section-title">
+    <h2>🔗 Relación entre los Módulos</h2>
+    <p>Cómo se conectan los datos internamente</p>
+  </div>
+
+  <div style="background:#13131f; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:32px; font-family: monospace; font-size:13px; line-height:2; color:#94a3b8;">
+    <div style="color:#818cf8; font-weight:700; margin-bottom:8px; font-family:Inter,sans-serif; font-size:12px; letter-spacing:2px; text-transform:uppercase;">Flujo de datos</div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div><span style="color:#fbbf24">📝 Formulario</span> → crea → <span style="color:#60a5fa">pedidos</span> (estado: pendiente)</div>
+      <div style="padding-left:20px;color:#475569">↓</div>
+      <div style="padding-left:20px"><span style="color:#34d399">✅ LIQUIDAR</span> → crea → <span style="color:#60a5fa">ventas</span> (estado: ACEPTADA) + actualiza pedido (estado: entregado)</div>
+      <div style="padding-left:40px;color:#475569">↓ si método = crédito</div>
+      <div style="padding-left:40px"><span style="color:#22d3ee">💳 Crédito</span> → crea → <span style="color:#60a5fa">cartera</span> (cuenta por cobrar)</div>
+      <div style="padding-left:20px;color:#475569">↓</div>
+      <div style="padding-left:20px"><span style="color:#f87171">🗑️ ANULAR</span> → actualiza → <span style="color:#60a5fa">ventas</span> (estado: ANULADA) + pedido (estado: cancelado)</div>
+      <div style="padding-left:40px;color:#475569">↓</div>
+      <div style="padding-left:40px"><span style="color:#60a5fa">Caja</span> recalcula automáticamente (excluye ANULADAS)</div>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<div class="footer">
+  Generado por <span>Antigravity AI</span> · Sistema POS Mi Restaurante · {{ new Date().getFullYear() }}
+</div>
+
+</body>
+</html>

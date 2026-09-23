@@ -12,7 +12,8 @@ export default function PedidoPage() {
   const [productos, setProductos]   = useState([])
   const [loading, setLoading]       = useState(true)
 
-  const [cliente, setCliente]       = useState('')
+  const DEFAULT_CLIENTE = 'Cliente pos - 2222'
+  const [cliente, setCliente]       = useState(DEFAULT_CLIENTE)
   const [vendedorId, setVendedorId] = useState('')
   const [tipo, setTipo]             = useState('mesa')
   const [mesaId, setMesaId]         = useState('')
@@ -90,7 +91,7 @@ export default function PedidoPage() {
       })
       toast(`Pedido #${res.data.numero_pedido} enviado — Total: ${fmt(res.data.total)}`, 'success', 4000)
       setCarrito([])
-      setCliente('')
+      setCliente(DEFAULT_CLIENTE)
       setMesaId('')
       setVendedorId('')
       setTelefono('')
@@ -136,7 +137,17 @@ export default function PedidoPage() {
           <div className="card-body">
             <div className="form-group">
               <label className="label">Nombre del cliente</label>
-              <input className="input" placeholder="Ej. Carlos Pérez" value={cliente} onChange={e => setCliente(e.target.value)} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input className="input" placeholder="Ej. Carlos Pérez" value={cliente} onChange={e => setCliente(e.target.value)} />
+                <button 
+                  className="btn btn-ghost btn-icon" 
+                  title="Limpiar"
+                  onClick={() => setCliente('')}
+                  style={{ background: 'var(--bg3)', border: '1px solid var(--border)', flexShrink: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="form-group">
