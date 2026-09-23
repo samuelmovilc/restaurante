@@ -35,7 +35,11 @@ export default function PedidoPage() {
     ]).then(([cfg, cats, mes, vends, prods]) => {
       setConfig(cfg.data || {})
       setCategorias(cats.data || [])
-      setMesas((mes.data || []).filter(m => m.activa))
+      const activas = (mes.data || []).filter(m => m.activa)
+      setMesas(activas)
+      if (activas.length > 0) {
+        setMesaId(activas[0].id)
+      }
       setVendedores((vends.data || []).filter(v => v.activo))
       setProductos(prods.data || [])
     }).catch(console.error)
@@ -92,7 +96,7 @@ export default function PedidoPage() {
       toast(`Pedido #${res.data.numero_pedido} enviado — Total: ${fmt(res.data.total)}`, 'success', 4000)
       setCarrito([])
       setCliente(DEFAULT_CLIENTE)
-      setMesaId('')
+      setMesaId(mesas.length > 0 ? mesas[0].id : '')
       setVendedorId('')
       setTelefono('')
       setDireccion('')
