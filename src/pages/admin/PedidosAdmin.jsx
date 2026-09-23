@@ -371,7 +371,7 @@ export default function PedidosAdmin() {
   return (
     <div>
       <ToastContainer />
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 24, marginBottom: 16 }}>
         <div>
           <h2>Pedidos</h2>
           <p>Gestión de órdenes activas y liquidación.</p>
