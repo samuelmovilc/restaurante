@@ -131,7 +131,7 @@ export default function MobileConfigAdmin() {
     { id: 'cats', title: 'Categorías', icon: '📋', desc: `${cats.length} categorías` },
     { id: 'vends', title: 'Personal', icon: '👥', desc: `${vends.length} empleados` },
     { id: 'mps', title: 'Métodos de Pago', icon: '💳', desc: `${mps.length} métodos` },
-    { id: 'nav_cartera', title: 'Cartera (Cuentas)', icon: '📒', desc: 'Deudas y abonos' },
+    // { id: 'nav_cartera', title: 'Cartera (Cuentas)', icon: '📒', desc: 'Deudas y abonos' },
     { id: 'nav_costeo', title: 'Costeo de Recetas', icon: '🍲', desc: 'Calculadora de utilidad' },
   ]
 
