@@ -27,6 +27,20 @@ export default function CajaAdmin() {
   // Modal Gasto
   const [showGasto, setShowGasto] = useState(false)
   const [gastoForm, setGastoForm] = useState({ categoria: '', observacion: '', metodo_pago: '', monto: '' })
+  const [categoriasGastos, setCategoriasGastos] = useState(() => {
+    const saved = localStorage.getItem('categorias_gastos')
+    return saved ? JSON.parse(saved) : ['Insumos', 'Aseo', 'Pago Proveedor', 'Transporte', 'Servicios']
+  })
+
+  function agregarCategoria() {
+    const cat = prompt('Ingrese el nombre de la nueva categoría:')
+    if (cat && cat.trim()) {
+      const updated = [...categoriasGastos, cat.trim()]
+      setCategoriasGastos(updated)
+      localStorage.setItem('categorias_gastos', JSON.stringify(updated))
+      setGastoForm(f => ({ ...f, categoria: cat.trim() }))
+    }
+  }
 
   async function cargarTodo() {
     setLoading(true)
@@ -152,10 +166,18 @@ export default function CajaAdmin() {
              <button type="button" onClick={() => setShowGasto(false)} style={{ background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', color: '#999' }}>&times;</button>
           </div>
           <form onSubmit={confirmarGasto}>
-            <div className="form-group">
-              <label className="label" style={{ fontWeight: 500, marginBottom: 8, display: 'block', color: '#333' }}>Categoría</label>
-              <input type="text" className="input" placeholder="Ej. Insumos, Aseo, Pago Proveedor..." value={gastoForm.categoria} onChange={e => setGastoForm(f => ({ ...f, categoria: e.target.value }))} required style={{ background: '#fff', border: '1px solid #e2e8f0', color: '#333', borderRadius: 8, padding: '10px 14px', width: '100%' }} />
-            </div>
+              <div className="form-group">
+                <label className="label" style={{ fontWeight: 500, marginBottom: 8, display: 'block', color: '#333' }}>Categoría</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <select className="select" value={gastoForm.categoria} onChange={e => setGastoForm(f => ({ ...f, categoria: e.target.value }))} required style={{ background: '#fff', color: '#333', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', flex: 1 }}>
+                    <option value="">Seleccione Categoría...</option>
+                    {categoriasGastos.map((c, i) => (
+                      <option key={i} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={agregarCategoria} className="btn btn-primary" style={{ padding: '0 16px', borderRadius: 8, fontSize: 20 }}>+</button>
+                </div>
+              </div>
             <div className="form-group">
               <label className="label" style={{ fontWeight: 500, marginBottom: 8, display: 'block', color: '#333' }}>Observación</label>
               <input type="text" className="input" placeholder="Detalles (Ej. Vasos y servilletas)" value={gastoForm.observacion} onChange={e => setGastoForm(f => ({ ...f, observacion: e.target.value }))} style={{ background: '#fff', border: '1px solid #e2e8f0', color: '#333', borderRadius: 8, padding: '10px 14px', width: '100%' }} />
