@@ -385,6 +385,7 @@ export default function CajaAdmin() {
                           <th style={{ fontSize: 12, padding: 8 }}>Hora</th>
                           <th style={{ fontSize: 12, padding: 8 }}>Folio</th>
                           <th style={{ fontSize: 12, padding: 8, textAlign: 'right' }}>Monto</th>
+                          <th style={{ fontSize: 12, padding: 8, textAlign: 'center' }}>Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -393,9 +394,14 @@ export default function CajaAdmin() {
                             <td style={{ fontSize: 12, padding: 8, color: 'var(--text3)' }}>{new Date(v.created_at).toLocaleTimeString('es-CO')}</td>
                             <td style={{ fontSize: 12, padding: 8 }}>{v.folio} {v.estado === 'ANULADA' ? '(A)' : ''}</td>
                             <td style={{ fontSize: 12, padding: 8, textAlign: 'right', fontWeight: 600, color: v.estado === 'ANULADA' ? 'var(--text3)' : 'var(--vd)', textDecoration: v.estado === 'ANULADA' ? 'line-through' : 'none' }}>+ {fmt(v.total)}</td>
+                            <td style={{ fontSize: 12, padding: 8, textAlign: 'center' }}>
+                              {v.estado !== 'ANULADA' && (
+                                <button className="btn btn-ghost btn-xs" style={{ padding: '4px 8px', color: 'var(--red)', fontSize: 11 }} onClick={() => anularVenta(v.id, v.folio)}>🚫 Anular</button>
+                              )}
+                            </td>
                           </tr>
                         ))}
-                        {ventasTurno.length === 0 && <tr><td colSpan="3" style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--text3)' }}>No hay ventas en este turno</td></tr>}
+                        {ventasTurno.length === 0 && <tr><td colSpan="4" style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--text3)' }}>No hay ventas en este turno</td></tr>}
                       </tbody>
                     </table>
                   </div>
