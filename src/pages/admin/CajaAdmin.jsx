@@ -41,7 +41,7 @@ export default function CajaAdmin() {
       setTurno(turnoActual)
       setHistorico(hRes.data || [])
       
-      const mps = mRes.data || []
+      const mps = Array.isArray(mRes) ? mRes : (mRes?.data || [])
       setMetodosPago(mps)
       
       // Initialize saldos iniciales form
