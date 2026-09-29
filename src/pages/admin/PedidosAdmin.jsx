@@ -14,6 +14,7 @@ const TIPO_LABEL = { mesa: 'Mesa', domicilio: 'Domicilio', venta_interna: 'Inter
 
 export default function PedidosAdmin() {
   const { toast, ToastContainer } = useToast()
+  const [config, setConfig]           = useState({})
   const [pedidos, setPedidos]         = useState([])
   const [loading, setLoading]         = useState(true)
   const [selPedido, setSelPedido]     = useState(null)
@@ -57,6 +58,7 @@ export default function PedidosAdmin() {
   useEffect(() => {
     cargarPedidos()
     api.getMetodosPago().then(r => setMetodosPago(r.data || [])).catch(() => {})
+    api.getConfig().then(r => setConfig(r.data || {})).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtroEstado, fFecha, fTipo, fOrden])
 
@@ -196,8 +198,8 @@ export default function PedidosAdmin() {
         total,
       })
       
-      // Auto-generar PDF de la factura
-      descargarFacturaPDF(selPedido, mpsConTipo, total, cambio)
+      // Auto-generar factura
+      imprimirFactura(selPedido, mpsConTipo, total, cambio)
       // NOTA: El backend (ventas.js) ya actualiza el estado del pedido a 'entregado'
       // automáticamente al crear la venta. NO hay que llamar cambiarEstado aquí.
 
@@ -205,70 +207,20 @@ export default function PedidosAdmin() {
       setSelPedido(null)
       cargarPedidos()
     } catch (e) { toast(e.message, 'error') }
-    finally { setLiquidando(false) }
-  }
-
-  function descargarFacturaPDF(p, mps, total, cambio) {
+    finally { setLiquidando  function imprimirFactura(p, mps, totalCalculado, cambioCalculado) {
     const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
-    const height = 100 + (items.length * 8)
-    const doc = new jsPDF({ unit: 'mm', format: [80, height] })
     
-    doc.setFont("helvetica", "bold")
-    doc.setFontSize(14)
-    doc.text("AMARILLO POLLO", 40, 10, { align: "center" })
-    
-    doc.setFontSize(10)
-    doc.text("FACTURA DE VENTA", 40, 16, { align: "center" })
-    
-    doc.setFont("helvetica", "normal")
-    doc.setFontSize(9)
-    doc.text(`Orden: #${p.numero_pedido || p.num || 'S/N'}`, 5, 24)
-    doc.text(`Fecha: ${new Date(p.created_at || Date.now()).toLocaleString('es-CO')}`, 5, 28)
-    doc.text(`Cliente: ${p.nombre_cliente || 'N/A'}`, 5, 32)
-    
-    doc.line(5, 35, 75, 35)
-    doc.setFont("helvetica", "bold")
-    doc.text("CANT", 5, 40)
-    doc.text("DESCRIPCION", 18, 40)
-    doc.text("TOTAL", 60, 40)
-    doc.line(5, 42, 75, 42)
-    
-    let y = 47
-    doc.setFont("helvetica", "normal")
-    items.forEach(it => {
-      doc.text(`${it.cantidad}`, 5, y)
-      doc.text((it.nombre_producto||'').substring(0, 17), 15, y)
-      const sub = parseFloat(it.precio_unitario) * parseInt(it.cantidad)
-      doc.text(`$${sub.toLocaleString('es-CO')}`, 60, y)
-      y += 6
-    })
-    
-    doc.line(5, y, 75, y)
-    y += 5
-    
-    doc.setFont("helvetica", "bold")
-    doc.text(`TOTAL A PAGAR: $${parseFloat(total||0).toLocaleString('es-CO')}`, 5, y)
-    y += 6
-    
+    // Pagos adicionales
+    let paymentsHtml = ''
     if (mps && mps.length) {
-      doc.setFont("helvetica", "normal")
-      mps.forEach(m => {
-        doc.text(`PAGO (${m.nombre}): $${parseFloat(m.monto||0).toLocaleString('es-CO')}`, 5, y)
-        y += 5
-      })
-      if (cambio > 0) {
-        doc.text(`CAMBIO: $${parseFloat(cambio||0).toLocaleString('es-CO')}`, 5, y)
-        y += 5
-      }
+      paymentsHtml = `
+        <div class="totals" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ccc;">
+          ${mps.map(m => `<div><span>PAGO (${m.nombre})</span><span>${fmt(m.monto)}</span></div>`).join('')}
+          ${cambioCalculado > 0 ? `<div><span>CAMBIO</span><span>${fmt(cambioCalculado)}</span></div>` : ''}
+        </div>
+      `
     }
-    
-    doc.setFont("helvetica", "normal")
-    doc.text("¡Gracias por su compra!", 40, y + 5, { align: "center" })
-    
-    doc.save(`Factura_Orden_${p.numero_pedido || p.id}.pdf`)
-  }
-  function imprimirFactura(p) {
-    const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
+
     let html = `
       <html>
         <head>
@@ -294,13 +246,15 @@ export default function PedidosAdmin() {
           </style>
         </head>
         <body>
-          <h1>Factura de Venta</h1>
-          <div class="subtitle">Orden #${p.numero_pedido}</div>
+          ${config.logo_url ? `<img src="${config.logo_url}" alt="Logo" style="width: 120px; margin: 0 auto 10px auto; display: block;" />` : ''}
+          <h1>${config.nombre_negocio || 'Factura de Venta'}</h1>
+          ${config.nit_negocio ? `<div style="text-align:center; font-size:12px; margin-bottom:5px;">NIT: ${config.nit_negocio}</div>` : ''}
+          <div class="subtitle">Orden #${p.numero_pedido || p.num || p.id || 'S/N'}</div>
           <div class="info">
-            <div><b>Fecha:</b> ${new Date(p.created_at).toLocaleString('es-CO')}</div>
+            <div><b>Fecha:</b> ${new Date(p.created_at || Date.now()).toLocaleString('es-CO')}</div>
             <div><b>Cliente:</b> ${p.nombre_cliente || 'Mostrador'}</div>
             ${p.mesa_nombre ? `<div><b>Mesa:</b> ${p.mesa_nombre}</div>` : ''}
-            <div><b>Tipo:</b> ${p.tipo_pedido.toUpperCase()}</div>
+            <div><b>Tipo:</b> ${p.tipo_pedido ? p.tipo_pedido.toUpperCase() : ''}</div>
           </div>
           <table>
             <thead>
@@ -315,14 +269,15 @@ export default function PedidosAdmin() {
                 <tr>
                   <td class="qty">${it.cantidad}</td>
                   <td>${it.nombre_producto}</td>
-                  <td class="price">${fmt(it.cantidad * (parseFloat(it.precio) || 0))}</td>
+                  <td class="price">${fmt(it.cantidad * (parseFloat(it.precio_unitario || it.precio) || 0))}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           <div class="totals">
-            <div class="grand-total"><span>TOTAL</span><span>${fmt(p.total)}</span></div>
+            <div class="grand-total"><span>TOTAL</span><span>${fmt(totalCalculado || p.total)}</span></div>
           </div>
+          ${paymentsHtml}
           <div class="footer">
             ¡Gracias por su compra!<br>
             Vuelva pronto
@@ -334,6 +289,7 @@ export default function PedidosAdmin() {
     w.document.write(html)
     w.document.close()
     setTimeout(() => { w.print(); w.close(); }, 500)
+  }lose(); }, 500)
   }
 
   function generarComandas() {
