@@ -22,7 +22,7 @@ export default function CajaAdmin() {
   // Modal Abrir Caja
   const [showAbrir, setShowAbrir] = useState(false)
   const [metodosPago, setMetodosPago] = useState([])
-  const [saldosIniciales, setSaldosIniciales] = useState([])
+  const [saldoInicial, setSaldoInicial] = useState('')
 
   // Modal Gasto
   const [showGasto, setShowGasto] = useState(false)
@@ -44,10 +44,7 @@ export default function CajaAdmin() {
       const mps = Array.isArray(mRes) ? mRes : (mRes?.data || [])
       setMetodosPago(mps)
       
-      // Initialize saldos iniciales form
-      if (mps.length > 0) {
-        setSaldosIniciales(mps.map(m => ({ metodo_pago: m.nombre, monto: '' })))
-      }
+      // Se simplifica: no se inicializan métodos de pago para saldoInicial porque ahora es un campo único
 
       if (turnoActual) {
         const [vRes, gRes] = await Promise.all([
@@ -74,11 +71,12 @@ export default function CajaAdmin() {
     e.preventDefault()
     try {
       const data = {
-        saldos: saldosIniciales.map(s => ({ ...s, monto: parseFloat(s.monto) || 0 }))
+        saldos: [{ metodo_pago: 'Efectivo', monto: parseFloat(saldoInicial) || 0 }]
       }
       await api.abrirCaja(data)
       toast('Caja abierta correctamente', 'success')
       setShowAbrir(false)
+      setSaldoInicial('')
       cargarTodo()
     } catch(e) {
       toast(e.message, 'error')
@@ -88,43 +86,38 @@ export default function CajaAdmin() {
   function renderModalAbrir() {
     if (!showAbrir) return null
     
-    const totalInicial = saldosIniciales.reduce((sum, s) => sum + (parseFloat(s.monto) || 0), 0)
-
     return (
-      <div className="modal-overlay">
-        <div className="modal-content" style={{ maxWidth: 450 }}>
-          <h3>Apertura de Caja</h3>
-          <p style={{ color: 'var(--text3)', fontSize: 13, marginBottom: 16 }}>
-            Ingresa el saldo inicial con el que abres el turno para cada método de pago.
-          </p>
+      <div className="modal-overlay" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'none' }}>
+        <div className="modal-content" style={{ maxWidth: 650, background: '#fff', color: '#000', borderRadius: 12, padding: '24px 32px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+             <h3 style={{ margin: 0, fontSize: 20, color: '#111', fontWeight: 500 }}>Aperturar Caja</h3>
+             <button type="button" onClick={() => setShowAbrir(false)} style={{ background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', color: '#999' }}>&times;</button>
+          </div>
+          
           <form onSubmit={confirmarApertura}>
-            {saldosIniciales.map((s, idx) => (
-              <div className="form-group" key={s.metodo_pago}>
-                <label className="label">{s.metodo_pago}</label>
+            <div style={{ display: 'flex', gap: 24 }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="label" style={{ fontWeight: 500, marginBottom: 8, display: 'block', color: '#333' }}>Vendedor</label>
+                <select className="select" disabled style={{ background: '#f8f9fa', color: '#333', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', width: '100%' }}>
+                  <option>Administrador</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="label" style={{ fontWeight: 500, marginBottom: 8, display: 'block', color: '#333' }}>Saldo inicial</label>
                 <input 
                   type="number" 
                   className="input" 
-                  placeholder="Ej. 200000"
-                  value={s.monto}
-                  onChange={e => {
-                    const copy = [...saldosIniciales]
-                    copy[idx].monto = e.target.value
-                    setSaldosIniciales(copy)
-                  }}
+                  placeholder="0"
+                  value={saldoInicial}
+                  onChange={e => setSaldoInicial(e.target.value)}
+                  style={{ background: '#fff', border: '1px solid #e2e8f0', color: '#333', borderRadius: 8, padding: '10px 14px', width: '100%' }}
                 />
-              </div>
-            ))}
-            
-            <div style={{ padding: 16, background: 'var(--bg-card)', borderRadius: 8, marginTop: 16, border: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontWeight: 600 }}>
-                <span>TOTAL INICIAL:</span>
-                <span style={{ color: 'var(--primary)' }}>{fmt(totalInicial)}</span>
               </div>
             </div>
 
-            <div className="modal-actions" style={{ marginTop: 24 }}>
-              <button type="button" className="btn" onClick={() => setShowAbrir(false)}>Cancelar</button>
-              <button type="submit" className="btn btn-primary">CONFIRMAR APERTURA</button>
+            <div className="modal-actions" style={{ marginTop: 40, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <button type="button" className="btn" onClick={() => setShowAbrir(false)} style={{ background: '#fff', color: '#333', border: '1px solid #e2e8f0', padding: '10px 24px', borderRadius: 8 }}>Cancelar</button>
+              <button type="submit" className="btn" style={{ background: '#0f172a', color: '#fff', padding: '10px 24px', borderRadius: 8, border: 'none' }}>Guardar</button>
             </div>
           </form>
         </div>
