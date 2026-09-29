@@ -2,312 +2,387 @@ import React, { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { jsPDF } from 'jspdf'
 import 'jspdf-autotable'
-import { api, fmt, fmtF, today } from '../../lib/api'
+import { api, fmt, fmtF } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
 
 export default function CajaAdmin() {
   const { toast, ToastContainer } = useToast()
-  const [ventas, setVentas]   = useState([])
-  const [stats, setStats]     = useState({})
+  
+  const [activeTab, setActiveTab] = useState('operacion') // 'operacion' | 'historico'
   const [loading, setLoading] = useState(true)
-  const [fi, setFi] = useState(today())
-  const [ff, setFf] = useState(today())
-  const [est, setEst] = useState('ACEPTADA') // Por defecto solo ventas activas
+  
+  // Estado Turno
+  const [turno, setTurno] = useState(null)
+  const [ventasTurno, setVentasTurno] = useState([])
+  const [gastosTurno, setGastosTurno] = useState([])
+  
+  // Estado Histórico
+  const [historico, setHistorico] = useState([])
 
-  async function cargar() {
+  // Modal Abrir Caja
+  const [showAbrir, setShowAbrir] = useState(false)
+  const [metodosPago, setMetodosPago] = useState([])
+  const [saldosIniciales, setSaldosIniciales] = useState([])
+
+  // Modal Gasto
+  const [showGasto, setShowGasto] = useState(false)
+  const [gastoForm, setGastoForm] = useState({ categoria: '', observacion: '', metodo_pago: '', monto: '' })
+
+  async function cargarTodo() {
     setLoading(true)
     try {
-      const params = { fecha_inicio: fi, fecha_fin: ff }
-      if (est) params.estado = est
-      const [v, sRes] = await Promise.all([api.getVentas(params), api.getVentaStats(params)])
-      const ventasData = v.data || []
-      const statsBackend = sRes.data || {}
-      setVentas(ventasData)
+      const [tRes, hRes, mRes] = await Promise.all([
+        api.getTurnoAbierto(),
+        api.getHistoricoCajas(),
+        api.getMetodosPago()
+      ])
       
-      const aceptadas = ventasData.filter(x => x.estado === 'ACEPTADA')
-      const totalVendido = aceptadas.reduce((sum, x) => sum + parseFloat(x.total || 0), 0)
-      const totalCosto = aceptadas.reduce((sum, x) => sum + parseFloat(x.total_costo || 0), 0)
-      const utilidadBruta = totalVendido - totalCosto
-      const porcentaje = totalCosto > 0 ? ((utilidadBruta / totalCosto) * 100).toFixed(2) : (utilidadBruta > 0 ? 100 : 0)
+      const turnoActual = tRes.data
+      setTurno(turnoActual)
+      setHistorico(hRes.data || [])
       
-      setStats({
-        total_ventas: aceptadas.length,
-        total_vendido: totalVendido,
-        utilidad_bruta: utilidadBruta,
-        porcentaje_utilidad: porcentaje,
-        categorias: statsBackend.categorias || []
-      })
-    } catch (e) { toast(e.message, 'error') }
-    finally { setLoading(false) }
+      const mps = mRes.data || []
+      setMetodosPago(mps)
+      
+      // Initialize saldos iniciales form
+      if (mps.length > 0) {
+        setSaldosIniciales(mps.map(m => ({ metodo_pago: m.nombre, monto: '' })))
+      }
+
+      if (turnoActual) {
+        const [vRes, gRes] = await Promise.all([
+          // Obtenemos ventas filtradas desde backend que tengan este turno_id
+          api.getVentas({ turno_id: turnoActual.id }),
+          api.getGastos(turnoActual.id)
+        ])
+        setVentasTurno(vRes.data || [])
+        setGastosTurno(gRes.data || [])
+      } else {
+        setVentasTurno([])
+        setGastosTurno([])
+      }
+    } catch (e) {
+      toast(e.message, 'error')
+    }
+    setLoading(false)
   }
 
-  useEffect(() => { cargar() }, [])
+  useEffect(() => { cargarTodo() }, [])
 
-  async function anular(id, folio) {
+  // ================= ABRIR CAJA =================
+  async function confirmarApertura(e) {
+    e.preventDefault()
+    try {
+      const data = {
+        saldos: saldosIniciales.map(s => ({ ...s, monto: parseFloat(s.monto) || 0 }))
+      }
+      await api.abrirCaja(data)
+      toast('Caja abierta correctamente', 'success')
+      setShowAbrir(false)
+      cargarTodo()
+    } catch(e) {
+      toast(e.message, 'error')
+    }
+  }
+
+  function renderModalAbrir() {
+    if (!showAbrir) return null
+    
+    const totalInicial = saldosIniciales.reduce((sum, s) => sum + (parseFloat(s.monto) || 0), 0)
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content" style={{ maxWidth: 450 }}>
+          <h3>Apertura de Caja</h3>
+          <p style={{ color: 'var(--text3)', fontSize: 13, marginBottom: 16 }}>
+            Ingresa el saldo inicial con el que abres el turno para cada método de pago.
+          </p>
+          <form onSubmit={confirmarApertura}>
+            {saldosIniciales.map((s, idx) => (
+              <div className="form-group" key={s.metodo_pago}>
+                <label className="label">{s.metodo_pago}</label>
+                <input 
+                  type="number" 
+                  className="input" 
+                  placeholder="Ej. 200000"
+                  value={s.monto}
+                  onChange={e => {
+                    const copy = [...saldosIniciales]
+                    copy[idx].monto = e.target.value
+                    setSaldosIniciales(copy)
+                  }}
+                />
+              </div>
+            ))}
+            
+            <div style={{ padding: 16, background: 'var(--bg-card)', borderRadius: 8, marginTop: 16, border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontWeight: 600 }}>
+                <span>TOTAL INICIAL:</span>
+                <span style={{ color: 'var(--primary)' }}>{fmt(totalInicial)}</span>
+              </div>
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: 24 }}>
+              <button type="button" className="btn" onClick={() => setShowAbrir(false)}>Cancelar</button>
+              <button type="submit" className="btn btn-primary">CONFIRMAR APERTURA</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+  // ================= REGISTRAR GASTO =================
+  async function confirmarGasto(e) {
+    e.preventDefault()
+    if (!gastoForm.categoria || !gastoForm.monto || !gastoForm.metodo_pago) {
+      return toast('Por favor completa todos los campos requeridos', 'error')
+    }
+    try {
+      await api.crearGasto({ ...gastoForm, monto: parseFloat(gastoForm.monto) })
+      toast('Gasto registrado', 'success')
+      setShowGasto(false)
+      setGastoForm({ categoria: '', observacion: '', metodo_pago: '', monto: '' })
+      cargarTodo()
+    } catch(e) {
+      toast(e.message, 'error')
+    }
+  }
+
+  function renderModalGasto() {
+    if (!showGasto) return null
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content" style={{ maxWidth: 450 }}>
+          <h3>Registrar Gasto del Turno</h3>
+          <form onSubmit={confirmarGasto}>
+            <div className="form-group">
+              <label className="label">Categoría</label>
+              <input type="text" className="input" placeholder="Ej. Insumos, Aseo, Pago Proveedor..." value={gastoForm.categoria} onChange={e => setGastoForm(f => ({ ...f, categoria: e.target.value }))} required />
+            </div>
+            <div className="form-group">
+              <label className="label">Observación</label>
+              <input type="text" className="input" placeholder="Detalles (Ej. Vasos y servilletas)" value={gastoForm.observacion} onChange={e => setGastoForm(f => ({ ...f, observacion: e.target.value }))} />
+            </div>
+            <div className="form-group">
+              <label className="label">Método de Pago</label>
+              <select className="select" value={gastoForm.metodo_pago} onChange={e => setGastoForm(f => ({ ...f, metodo_pago: e.target.value }))} required>
+                <option value="">Selecciona...</option>
+                {metodosPago.map(m => (
+                  <option key={m.id} value={m.nombre}>{m.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="label">Monto</label>
+              <input type="number" className="input" placeholder="0" value={gastoForm.monto} onChange={e => setGastoForm(f => ({ ...f, monto: e.target.value }))} required />
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: 24 }}>
+              <button type="button" className="btn" onClick={() => setShowGasto(false)}>Cancelar</button>
+              <button type="submit" className="btn btn-danger">Guardar Gasto</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+  // ================= CERRAR CAJA =================
+  async function handleCerrarCaja() {
+    if (!confirm('¿Estás seguro de cerrar la caja actual? No podrás registrar más ventas ni gastos en este turno.')) return
+    try {
+      await api.cerrarCaja()
+      toast('Caja cerrada exitosamente', 'success')
+      cargarTodo()
+    } catch(e) {
+      toast(e.message, 'error')
+    }
+  }
+
+  // ================= UTILS =================
+  async function anularVenta(id, folio) {
     if (!confirm(`¿Anular la venta ${folio}?`)) return
     try {
       await api.anularVenta(id)
       toast('Venta anulada')
-      cargar()
+      cargarTodo()
     } catch (e) { toast(e.message, 'error') }
   }
 
-  function exportar() {
-    try {
-      const aceptadas = ventas.filter(x => x.estado === 'ACEPTADA')
-      
-      const totalesPorMetodo = {}
-      let totalGeneral = 0
-      
-      aceptadas.forEach(v => {
-        let parsed = []
-        try { parsed = JSON.parse(v.metodos_pago) } catch(e){}
-        parsed.forEach(m => {
-          const tipo = m.tipo || 'Efectivo'
-          const amt = parseFloat(m.monto || 0)
-          if (!totalesPorMetodo[tipo]) totalesPorMetodo[tipo] = 0
-          totalesPorMetodo[tipo] += amt
-          totalGeneral += amt
-        })
-      })
-
-      const resumenCierre = [
-        ['CIERRE DE CAJA', `Del ${fi} al ${ff}`],
-        [],
-        ['MÉTODO DE PAGO', 'TOTAL RECAUDADO']
-      ]
-      
-      Object.keys(totalesPorMetodo).forEach(tipo => {
-        resumenCierre.push([tipo, totalesPorMetodo[tipo]])
-      })
-      resumenCierre.push([])
-      resumenCierre.push(['TOTAL GENERAL', totalGeneral])
-      resumenCierre.push([])
-      resumenCierre.push(['UTILIDAD BRUTA', stats.utilidad_bruta])
-      resumenCierre.push(['MARGEN %', stats.porcentaje_utilidad + '%'])
-
-      const movimientos = ventas.map(v => {
-        let pagos = ''
-        try {
-          const p = JSON.parse(v.metodos_pago)
-          pagos = p.map(x => `${x.tipo}: $${x.monto}`).join(' | ')
-        } catch(e){}
-        
-        return {
-          'Folio': v.id_venta,
-          'Fecha': new Date(v.created_at).toLocaleDateString('es-CO'),
-          'Hora': new Date(v.created_at).toLocaleTimeString('es-CO'),
-          'Cliente': v.cliente_nombre,
-          'Ítems': v.items_count || 0,
-          'Total Venta': parseFloat(v.total || 0),
-          'Costo (Sistema)': parseFloat(v.total_costo || 0),
-          'Utilidad': parseFloat(v.total || 0) - parseFloat(v.total_costo || 0),
-          'Métodos de Pago': pagos,
-          'Estado': v.estado
-        }
-      })
-
-      const wb = XLSX.utils.book_new()
-      const wsResumen = XLSX.utils.aoa_to_sheet(resumenCierre)
-      const wsMovimientos = XLSX.utils.json_to_sheet(movimientos)
-
-      XLSX.utils.book_append_sheet(wb, wsResumen, 'Cierre por Método de Pago')
-      XLSX.writeFile(wb, `Caja_${fi}_al_${ff}.xlsx`)
-      toast('Exportado a Excel correctamente', 'success')
-    } catch(e) {
-      toast('Error al exportar: ' + e.message, 'error')
-    }
+  // ================= RENDER =================
+  if (loading && !turno) {
+    return <div style={{ padding: 48, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
   }
 
-  function exportarPDF() {
-    try {
-      const doc = new jsPDF({ unit: 'mm', format: [80, 200] })
-      let y = 10
-      
-      doc.setFontSize(14)
-      doc.setFont('helvetica', 'bold')
-      doc.text('CIERRE DE CAJA', 40, y, { align: 'center' })
-      y += 6
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
-      doc.text(`Del: ${fi}`, 40, y, { align: 'center' }); y += 5
-      doc.text(`Al: ${ff}`, 40, y, { align: 'center' }); y += 10
-      
-      const aceptadas = ventas.filter(x => x.estado === 'ACEPTADA')
-      const totalesPorMetodo = {}
-      let totalGeneral = 0
-      
-      aceptadas.forEach(v => {
-        let parsed = []
-        try { parsed = JSON.parse(v.metodos_pago) } catch(e){}
-        parsed.forEach(m => {
-          const tipo = m.tipo || 'Efectivo'
-          const amt = parseFloat(m.monto || 0)
-          if (!totalesPorMetodo[tipo]) totalesPorMetodo[tipo] = 0
-          totalesPorMetodo[tipo] += amt
-          totalGeneral += amt
-        })
-      })
-
-      doc.setFont('helvetica', 'bold')
-      doc.text('MÉTODOS DE PAGO', 40, y, { align: 'center' })
-      y += 6
-      doc.setFont('helvetica', 'normal')
-      
-      Object.keys(totalesPorMetodo).forEach(tipo => {
-        doc.text(`${tipo}:`, 10, y)
-        doc.text(fmt(totalesPorMetodo[tipo]), 70, y, { align: 'right' })
-        y += 5
-      })
-      
-      y += 5
-      doc.line(10, y, 70, y)
-      y += 7
-      
-      doc.setFont('helvetica', 'bold')
-      doc.text('TOTAL RECAUDADO:', 10, y)
-      doc.text(fmt(totalGeneral), 70, y, { align: 'right' })
-      y += 8
-      
-      doc.text('UTILIDAD BRUTA:', 10, y)
-      doc.text(fmt(stats.utilidad_bruta), 70, y, { align: 'right' })
-      y += 8
-      
-      doc.text('MARGEN:', 10, y)
-      doc.text(stats.porcentaje_utilidad + '%', 70, y, { align: 'right' })
-      y += 8
-      
-      // CATEGORIAS
-      if (stats.categorias && stats.categorias.length > 0) {
-        y += 4
-        doc.line(10, y, 70, y)
-        y += 6
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(10)
-        doc.text('VENTAS POR CATEGORÍA', 40, y, { align: 'center' })
-        y += 6
-        doc.setFontSize(8)
-        doc.text('CATEGORÍA', 10, y)
-        doc.text('CANT', 46, y)
-        doc.text('TOTAL', 70, y, { align: 'right' })
-        y += 4
-        doc.setFont('helvetica', 'normal')
-        stats.categorias.forEach(c => {
-          doc.text(String(c.categoria || 'Otros').substring(0, 15), 10, y)
-          doc.text(String(c.cantidad), 48, y)
-          doc.text(fmt(c.total), 70, y, { align: 'right' })
-          y += 5
-        })
-      }
-      y += 4
-      
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'normal')
-      doc.text(`Ventas procesadas: ${aceptadas.length}`, 40, y, { align: 'center' })
-      y += 4
-      doc.text('Generado por el sistema', 40, y, { align: 'center' })
-
-      doc.save(`CierreCaja_${fi}_al_${ff}.pdf`)
-      toast('PDF de Cierre generado (80mm)', 'success')
-    } catch (e) {
-      toast('Error al exportar PDF: ' + e.message, 'error')
-    }
-  }
+  const saldoActual = turno ? (parseFloat(turno.saldo_inicial) + parseFloat(turno.ingresos) - parseFloat(turno.gastos)) : 0
 
   return (
     <div>
       <ToastContainer />
-      <div className="page-header">
-        <div><h2>Caja — Historial de ventas</h2></div>
-      </div>
-
-      {/* STATS */}
-      <div className="stats-grid stats-3">
-        <div className="stat-card">
-          <div className="stat-label">Total vendido</div>
-          <div className="stat-value">{fmt(stats.total_vendido)}</div>
-          <div className="stat-sub">{stats.total_ventas} venta{stats.total_ventas !== 1 ? 's' : ''}</div>
+      <div className="page-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 16 }}>
+        <div>
+          <h2>Sistema de Caja</h2>
+          <p style={{ color: 'var(--text3)' }}>Control de turnos, ingresos y gastos operativos</p>
         </div>
-        <div className="stat-card">
-          <div className="stat-label">Utilidad bruta</div>
-          <div className="stat-value" style={{ color: 'var(--vd)' }}>{fmt(stats.utilidad_bruta)}</div>
-          <div className="stat-sub vd">Precio venta − costo real</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">% Utilidad</div>
-          <div className="stat-value" style={{ color: 'var(--primary)' }}>{stats.porcentaje_utilidad || 0}%</div>
-          <div className="stat-sub">Margen real del período</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className={`btn ${activeTab === 'operacion' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('operacion')}>Operación</button>
+          <button className={`btn ${activeTab === 'historico' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('historico')}>Historial de Cierres</button>
         </div>
       </div>
 
-      {/* BARRA FILTROS */}
-      <div className="caja-bar">
-        <div className="filter-group">
-          <label className="filter-label" style={{ color: 'var(--text3)' }}>Fecha inicio</label>
-          <input className="filter-input" type="date" value={fi} onChange={e => setFi(e.target.value)} />
-        </div>
-        <div className="filter-group">
-          <label className="filter-label" style={{ color: 'var(--text3)' }}>Fecha fin</label>
-          <input className="filter-input" type="date" value={ff} onChange={e => setFf(e.target.value)} />
-        </div>
-        <div className="filter-group">
-          <label className="filter-label" style={{ color: 'var(--text3)' }}>Estado</label>
-          <select className="filter-input" value={est} onChange={e => setEst(e.target.value)}>
-            <option value="">Todas</option>
-            <option value="ACEPTADA">Aceptada</option>
-            <option value="ANULADA">Anulada</option>
-          </select>
-        </div>
-        <button className="btn btn-primary btn-sm" onClick={cargar}>Actualizar</button>
-        <button className="btn btn-success btn-sm" onClick={exportar} style={{ marginLeft: 8 }}>Exportar Excel</button>
-        <button className="btn btn-danger btn-sm" onClick={exportarPDF} style={{ marginLeft: 8 }}>Exportar PDF</button>
-        <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: 'var(--text3)' }}>
-          Total: {fmt(stats.total_vendido)} · {stats.total_ventas || 0} venta{(stats.total_ventas !== 1) ? 's' : ''} aceptadas
-        </span>
-      </div>
+      {activeTab === 'operacion' && (
+        <div className="card" style={{ padding: 24 }}>
+          {!turno ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+              <h3 style={{ marginBottom: 8 }}>CAJA CERRADA</h3>
+              <p style={{ color: 'var(--text3)', marginBottom: 24 }}>No hay ningún turno abierto. Debes abrir la caja para poder registrar ventas y gastos.</p>
+              <button className="btn btn-primary" style={{ padding: '12px 32px', fontSize: 16 }} onClick={() => setShowAbrir(true)}>ABRIR CAJA</button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
+                <div>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--vd)', margin: 0 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--vd)', display: 'inline-block' }}></span>
+                    CAJA ABIERTA
+                  </h3>
+                  <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4 }}>
+                    Abierta el: {new Date(turno.fecha_apertura).toLocaleString('es-CO')}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-success" onClick={() => setShowGasto(true)}>REGISTRAR GASTO</button>
+                  <button className="btn btn-danger" onClick={handleCerrarCaja}>CERRAR CAJA</button>
+                </div>
+              </div>
 
-      <div className="card">
-        {loading ? (
-          <div style={{ padding: 48, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
-        ) : (
+              {/* STATS TURNO */}
+              <div className="stats-grid stats-4" style={{ marginBottom: 32 }}>
+                <div className="stat-card" style={{ background: 'var(--bg-page)' }}>
+                  <div className="stat-label">Saldo Inicial (Base)</div>
+                  <div className="stat-value">{fmt(turno.saldo_inicial)}</div>
+                </div>
+                <div className="stat-card" style={{ background: 'rgba(34,197,94,0.1)', borderColor: 'rgba(34,197,94,0.2)' }}>
+                  <div className="stat-label" style={{ color: 'var(--vd)' }}>+ Ingresos (Ventas)</div>
+                  <div className="stat-value" style={{ color: 'var(--vd)' }}>{fmt(turno.ingresos)}</div>
+                </div>
+                <div className="stat-card" style={{ background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.2)' }}>
+                  <div className="stat-label" style={{ color: 'var(--red)' }}>- Gastos (Egresos)</div>
+                  <div className="stat-value" style={{ color: 'var(--red)' }}>{fmt(turno.gastos)}</div>
+                </div>
+                <div className="stat-card" style={{ border: '2px solid var(--az)', background: 'var(--bg-page)' }}>
+                  <div className="stat-label" style={{ fontWeight: 700 }}>= SALDO ACTUAL</div>
+                  <div className="stat-value" style={{ color: 'var(--az)' }}>{fmt(saldoActual)}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+                {/* LISTA GASTOS */}
+                <div>
+                  <h4 style={{ marginBottom: 12 }}>Gastos Registrados ({gastosTurno.length})</h4>
+                  <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                    <table style={{ margin: 0 }}>
+                      <thead style={{ background: 'var(--bg-page)' }}>
+                        <tr>
+                          <th style={{ fontSize: 12, padding: 8 }}>Categoría / Obs</th>
+                          <th style={{ fontSize: 12, padding: 8 }}>Método</th>
+                          <th style={{ fontSize: 12, padding: 8, textAlign: 'right' }}>Monto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {gastosTurno.map(g => (
+                          <tr key={g.id}>
+                            <td style={{ fontSize: 12, padding: 8 }}>
+                              <strong>{g.categoria}</strong><br/>
+                              <span style={{ color: 'var(--text3)' }}>{g.observacion}</span>
+                            </td>
+                            <td style={{ fontSize: 12, padding: 8 }}>{g.metodo_pago}</td>
+                            <td style={{ fontSize: 12, padding: 8, textAlign: 'right', fontWeight: 600, color: 'var(--red)' }}>- {fmt(g.monto)}</td>
+                          </tr>
+                        ))}
+                        {gastosTurno.length === 0 && <tr><td colSpan="3" style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--text3)' }}>No hay gastos en este turno</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* LISTA VENTAS (RESUMEN) */}
+                <div>
+                  <h4 style={{ marginBottom: 12 }}>Ventas Registradas ({ventasTurno.length})</h4>
+                  <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', maxHeight: 400, overflowY: 'auto' }}>
+                    <table style={{ margin: 0 }}>
+                      <thead style={{ background: 'var(--bg-page)' }}>
+                        <tr>
+                          <th style={{ fontSize: 12, padding: 8 }}>Hora</th>
+                          <th style={{ fontSize: 12, padding: 8 }}>Folio</th>
+                          <th style={{ fontSize: 12, padding: 8, textAlign: 'right' }}>Monto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ventasTurno.map(v => (
+                          <tr key={v.id}>
+                            <td style={{ fontSize: 12, padding: 8, color: 'var(--text3)' }}>{new Date(v.created_at).toLocaleTimeString('es-CO')}</td>
+                            <td style={{ fontSize: 12, padding: 8 }}>{v.folio} {v.estado === 'ANULADA' ? '(A)' : ''}</td>
+                            <td style={{ fontSize: 12, padding: 8, textAlign: 'right', fontWeight: 600, color: v.estado === 'ANULADA' ? 'var(--text3)' : 'var(--vd)', textDecoration: v.estado === 'ANULADA' ? 'line-through' : 'none' }}>+ {fmt(v.total)}</td>
+                          </tr>
+                        ))}
+                        {ventasTurno.length === 0 && <tr><td colSpan="3" style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--text3)' }}>No hay ventas en este turno</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'historico' && (
+        <div className="card">
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Folio</th><th>Hora</th><th>Cliente</th><th>Ítems</th><th>Total</th>
-                  <th>Utilidad</th><th>Métodos de pago</th><th>Estado</th><th>Acciones</th>
+                  <th>Turno ID</th>
+                  <th>Apertura</th>
+                  <th>Cierre</th>
+                  <th>Inicial</th>
+                  <th>Ingresos</th>
+                  <th>Gastos</th>
+                  <th>Saldo Final</th>
+                  <th>Usuarios</th>
                 </tr>
               </thead>
               <tbody>
-                {ventas.map(v => (
-                  <tr key={v.id}>
-                    <td style={{ fontWeight: 700, color: 'var(--az)', fontSize: 12 }}>{v.folio}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text3)' }}>{v.hora_venta}</td>
-                    <td style={{ fontSize: 12 }}>{v.cliente_nombre || '—'}</td>
-                    <td style={{ color: 'var(--az)', fontSize: 12 }}>{v.items_count || 0} ítem(s)</td>
-                    <td><strong style={{ color: 'var(--primary)' }}>{fmt(v.total)}</strong></td>
-                    <td style={{ color: 'var(--vd)', fontWeight: 700, fontSize: 12 }}>{fmt(v.total - v.total_costo)}</td>
-                    <td style={{ fontSize: 11, color: 'var(--text3)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.metodos_pago_str || '—'}</td>
-                    <td>
-                      <span className={`badge ${v.estado === 'ACEPTADA' ? 'badge-green' : 'badge-red'}`}>{v.estado}</span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        {v.estado === 'ACEPTADA' && (
-                          <button className="btn btn-danger btn-xs" onClick={() => anular(v.id, v.folio)}>Anular</button>
-                        )}
-                      </div>
+                {historico.map(h => (
+                  <tr key={h.id}>
+                    <td style={{ fontWeight: 700 }}>#{h.id}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text3)' }}>{new Date(h.fecha_apertura).toLocaleString('es-CO')}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text3)' }}>{h.fecha_cierre ? new Date(h.fecha_cierre).toLocaleString('es-CO') : '—'}</td>
+                    <td style={{ fontSize: 12 }}>{fmt(h.saldo_inicial)}</td>
+                    <td style={{ fontSize: 12, color: 'var(--vd)', fontWeight: 600 }}>{fmt(h.ingresos)}</td>
+                    <td style={{ fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>{fmt(h.gastos)}</td>
+                    <td style={{ fontSize: 13, fontWeight: 700, color: 'var(--az)' }}>{fmt(h.saldo_final_calculado)}</td>
+                    <td style={{ fontSize: 11, color: 'var(--text3)' }}>
+                      A: {h.usuario_apertura || '—'}<br/>
+                      C: {h.usuario_cierre || '—'}
                     </td>
                   </tr>
                 ))}
-                {!ventas.length && (
-                  <tr><td colSpan="9" style={{ textAlign: 'center', padding: 28, color: 'var(--text3)', fontSize: 13 }}>Sin ventas en este período</td></tr>
+                {historico.length === 0 && (
+                  <tr><td colSpan="8" style={{ padding: 24, textAlign: 'center', color: 'var(--text3)' }}>No hay historial de cajas cerradas</td></tr>
                 )}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {renderModalAbrir()}
+      {renderModalGasto()}
     </div>
   )
 }

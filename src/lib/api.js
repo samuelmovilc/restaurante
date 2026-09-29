@@ -99,6 +99,14 @@ export const api = {
   anularVenta:     (id)   => request(`/api/ventas/${id}/anular`, { method: 'PATCH' }),
   exportarVentas:  (params= {}) => `${BASE}/api/ventas/export/excel?${new URLSearchParams(params)}&token=${getToken()}`,
 
+  // CAJA (NUEVO SISTEMA)
+  getTurnoAbierto: () => request('/api/caja/turno-abierto'),
+  abrirCaja:       (data) => request('/api/caja/abrir', { method: 'POST', body: JSON.stringify(data) }),
+  cerrarCaja:      () => request('/api/caja/cerrar', { method: 'POST' }),
+  getGastos:       (turnoId) => request(`/api/caja/gastos/${turnoId}`),
+  crearGasto:      (data) => request('/api/caja/gastos', { method: 'POST', body: JSON.stringify(data) }),
+  getHistoricoCajas: () => request('/api/caja/historico'),
+
   // CARTERA
   getCartera:      (params = {}) => request('/api/cartera?' + new URLSearchParams(params)),
   getPazSalvo:     (trabajador) => request('/api/cartera/paz-salvo?trabajador_nombre=' + encodeURIComponent(trabajador)),
