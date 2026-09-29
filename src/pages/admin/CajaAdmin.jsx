@@ -145,21 +145,24 @@ export default function CajaAdmin() {
   function renderModalGasto() {
     if (!showGasto) return null
     return (
-      <div className="modal-overlay">
-        <div className="modal-content" style={{ maxWidth: 450 }}>
-          <h3>Registrar Gasto del Turno</h3>
+      <div className="modal-overlay" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'none' }}>
+        <div className="modal-content" style={{ maxWidth: 450, background: '#fff', color: '#000', borderRadius: 12, padding: '24px 32px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+             <h3 style={{ margin: 0, fontSize: 20, color: '#111', fontWeight: 500 }}>Registrar Gasto del Turno</h3>
+             <button type="button" onClick={() => setShowGasto(false)} style={{ background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', color: '#999' }}>&times;</button>
+          </div>
           <form onSubmit={confirmarGasto}>
             <div className="form-group">
-              <label className="label">Categoría</label>
-              <input type="text" className="input" placeholder="Ej. Insumos, Aseo, Pago Proveedor..." value={gastoForm.categoria} onChange={e => setGastoForm(f => ({ ...f, categoria: e.target.value }))} required />
+              <label className="label" style={{ fontWeight: 500, marginBottom: 8, display: 'block', color: '#333' }}>Categoría</label>
+              <input type="text" className="input" placeholder="Ej. Insumos, Aseo, Pago Proveedor..." value={gastoForm.categoria} onChange={e => setGastoForm(f => ({ ...f, categoria: e.target.value }))} required style={{ background: '#fff', border: '1px solid #e2e8f0', color: '#333', borderRadius: 8, padding: '10px 14px', width: '100%' }} />
             </div>
             <div className="form-group">
-              <label className="label">Observación</label>
-              <input type="text" className="input" placeholder="Detalles (Ej. Vasos y servilletas)" value={gastoForm.observacion} onChange={e => setGastoForm(f => ({ ...f, observacion: e.target.value }))} />
+              <label className="label" style={{ fontWeight: 500, marginBottom: 8, display: 'block', color: '#333' }}>Observación</label>
+              <input type="text" className="input" placeholder="Detalles (Ej. Vasos y servilletas)" value={gastoForm.observacion} onChange={e => setGastoForm(f => ({ ...f, observacion: e.target.value }))} style={{ background: '#fff', border: '1px solid #e2e8f0', color: '#333', borderRadius: 8, padding: '10px 14px', width: '100%' }} />
             </div>
             <div className="form-group">
-              <label className="label">Método de Pago</label>
-              <select className="select" value={gastoForm.metodo_pago} onChange={e => setGastoForm(f => ({ ...f, metodo_pago: e.target.value }))} required>
+              <label className="label" style={{ fontWeight: 500, marginBottom: 8, display: 'block', color: '#333' }}>Método de Pago</label>
+              <select className="select" value={gastoForm.metodo_pago} onChange={e => setGastoForm(f => ({ ...f, metodo_pago: e.target.value }))} required style={{ background: '#fff', color: '#333', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', width: '100%' }}>
                 <option value="">Selecciona...</option>
                 {metodosPago.map(m => (
                   <option key={m.id} value={m.nombre}>{m.nombre}</option>
@@ -167,13 +170,13 @@ export default function CajaAdmin() {
               </select>
             </div>
             <div className="form-group">
-              <label className="label">Monto</label>
-              <input type="number" className="input" placeholder="0" value={gastoForm.monto} onChange={e => setGastoForm(f => ({ ...f, monto: e.target.value }))} required />
+              <label className="label" style={{ fontWeight: 500, marginBottom: 8, display: 'block', color: '#333' }}>Monto</label>
+              <input type="number" className="input" placeholder="0" value={gastoForm.monto} onChange={e => setGastoForm(f => ({ ...f, monto: e.target.value }))} required style={{ background: '#fff', border: '1px solid #e2e8f0', color: '#333', borderRadius: 8, padding: '10px 14px', width: '100%' }} />
             </div>
 
-            <div className="modal-actions" style={{ marginTop: 24 }}>
-              <button type="button" className="btn" onClick={() => setShowGasto(false)}>Cancelar</button>
-              <button type="submit" className="btn btn-danger">Guardar Gasto</button>
+            <div className="modal-actions" style={{ marginTop: 32, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <button type="button" className="btn" onClick={() => setShowGasto(false)} style={{ background: '#fff', color: '#333', border: '1px solid #e2e8f0', padding: '10px 24px', borderRadius: 8 }}>Cancelar</button>
+              <button type="submit" className="btn btn-danger" style={{ padding: '10px 24px', borderRadius: 8 }}>Guardar Gasto</button>
             </div>
           </form>
         </div>
