@@ -1,15 +1,41 @@
 import { jsPDF } from 'jspdf'
 
-export function downloadFacturaPDF(p, mps, total, cambio, config) {
+export async function downloadFacturaPDF(p, mps, total, cambio, config) {
   const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
-  const height = 130 + (items.length * 8) + (mps ? mps.length * 5 : 0)
+  const height = 130 + (items.length * 8) + (mps ? mps.length * 5 : 0) + (config?.logo_url ? 25 : 0)
   const doc = new jsPDF({ unit: 'mm', format: [80, height] })
   
+  let currentY = 10
+
+  if (config?.logo_url) {
+    try {
+      const img = new Image()
+      img.crossOrigin = 'Anonymous'
+      img.src = config.logo_url
+      await new Promise((resolve, reject) => {
+        img.onload = resolve
+        img.onerror = reject
+      })
+      
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0)
+      const dataUrl = canvas.toDataURL('image/png')
+      
+      doc.addImage(dataUrl, 'PNG', 25, currentY, 30, 30) // X=25 centers a 30x30 logo on 80mm width
+      currentY += 35
+    } catch (e) {
+      console.error('Error loading logo for PDF', e)
+    }
+  }
+
   doc.setFont("helvetica", "bold")
   doc.setFontSize(14)
-  doc.text(config?.nombre_negocio || "FACTURA", 40, 10, { align: "center" })
+  doc.text(config?.nombre_negocio || "FACTURA", 40, currentY, { align: "center" })
   
-  let currentY = 16
+  currentY += 6
   
   if (config?.nit_negocio) {
     doc.setFontSize(9)
