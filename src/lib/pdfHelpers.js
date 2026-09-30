@@ -200,6 +200,16 @@ export function downloadCuadrePDF(h, config) {
   doc.text("Ingresos (Ventas)", 5, y);
   doc.text(`$${parseFloat(h.ingresos||0).toLocaleString('es-CO')}`, 75, y, { align: "right" }); y += 5;
   
+  if (h.ingresos_por_metodo && h.ingresos_por_metodo.length > 0) {
+    doc.setFont("helvetica", "italic")
+    h.ingresos_por_metodo.forEach(mp => {
+      doc.text(`  - ${mp.metodo_nombre}`, 5, y);
+      doc.text(`$${parseFloat(mp.total||0).toLocaleString('es-CO')}`, 75, y, { align: "right" }); y += 4;
+    });
+    doc.setFont("helvetica", "normal")
+    y += 1;
+  }
+  
   doc.text("Gastos", 5, y);
   doc.text(`-$${parseFloat(h.gastos||0).toLocaleString('es-CO')}`, 75, y, { align: "right" }); y += 6;
   
