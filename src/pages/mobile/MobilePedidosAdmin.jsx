@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { jsPDF } from 'jspdf'
 import { api, fmt, today } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
 import MobileTopBar from '../../components/mobile/MobileTopBar'
+import { downloadFacturaPDF, downloadComandasPDF } from '../../lib/pdfHelpers'
 
 const EST_MAP = {
   pendiente:   { label: 'Pendiente',      cls: 'badge-gray'   },
@@ -13,6 +13,7 @@ const TIPO_LABEL = { mesa: 'Mesa', domicilio: 'Domicilio', venta_interna: 'Inter
 
 export default function MobilePedidosAdmin() {
   const { toast, ToastContainer } = useToast()
+  const [config, setConfig]           = useState({})
   const [pedidos, setPedidos]         = useState([])
   const [loading, setLoading]         = useState(true)
   
@@ -60,6 +61,7 @@ export default function MobilePedidosAdmin() {
   useEffect(() => {
     cargarPedidos()
     api.getMetodosPago().then(r => setMetodosPago(r.data || [])).catch(() => {})
+    api.getConfig().then(r => setConfig(r.data || {})).catch(() => {})
   }, [])
 
   function calcTotal() {
@@ -79,123 +81,17 @@ export default function MobilePedidosAdmin() {
 
   // ==== IMPRESION & PDF ====
   function imprimirFactura(p) {
-    const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
-    let html = `
-      <html><head>
-          <style>
-            @media print { @page { margin: 0; } body { margin: 10px; } }
-            body { font-family: monospace; width: 300px; margin: 0 auto; color: #000; }
-            h1 { text-align: center; font-size: 20px; text-transform: uppercase; }
-            .info { font-size: 12px; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 15px; }
-            th { text-align: left; border-bottom: 1px dashed #000; padding-bottom: 6px; }
-            .totals { font-size: 15px; font-weight: bold; border-top: 1px dashed #000; padding-top: 10px; text-align: right;}
-            .footer { text-align: center; font-size: 12px; margin-top: 30px; }
-          </style>
-        </head><body>
-          <h1>Factura</h1>
-          <div style="text-align:center">Orden #${p.numero_pedido}</div>
-          <div class="info">
-            <div>Fecha: ${new Date(p.created_at).toLocaleString('es-CO')}</div>
-            <div>Cliente: ${p.nombre_cliente || 'Mostrador'}</div>
-            ${p.mesa_nombre ? `<div>Mesa: ${p.mesa_nombre}</div>` : ''}
-          </div>
-          <table>
-            <tr><th>Cant</th><th>Prod</th><th style="text-align:right">Total</th></tr>
-            ${items.map(it => `<tr><td>${it.cantidad}</td><td>${it.nombre_producto}</td><td style="text-align:right">${fmt(it.cantidad * (parseFloat(it.precio) || 0))}</td></tr>`).join('')}
-          </table>
-          <div class="totals">TOTAL: ${fmt(p.total)}</div>
-          <div class="footer">¡Gracias por su compra!</div>
-        </body></html>`
-    const w = window.open('', '_blank', 'width=400,height=600')
-    if (w) {
-      w.document.write(html)
-      w.document.close()
-      setTimeout(() => { w.print(); w.close(); }, 500)
-    } else toast('Pop-ups bloqueados', 'error')
+    downloadFacturaPDF(p, [], p.total, 0, config)
     setActiveSheet(null)
   }
 
   function imprimirComanda(p) {
-    const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
-    const txt = [
-      '================================',
-      '       COMANDA DE COCINA',
-      '================================',
-      `Pedido : #${p.numero_pedido}`,
-      `Tipo   : ${TIPO_LABEL[p.tipo_pedido]}${p.mesa_nombre ? ' - ' + p.mesa_nombre : ''}`,
-      `Hora   : ${new Date(p.created_at).toLocaleTimeString('es-CO')}`,
-      '--------------------------------',
-      ...items.map(it => `  ${String(it.cantidad).padStart(2)}x  ${it.nombre_producto}`),
-      p.observaciones ? `\nOBS: ${p.observaciones}` : '',
-      '================================\n'
-    ].filter(Boolean).join('\n')
-    
-    const w = window.open('', '_blank', 'width=400,height=600')
-    if (w) {
-      w.document.write(`<pre style="font-family:monospace;font-size:14px;padding:10px">${txt}</pre>`)
-      w.document.close()
-      setTimeout(() => { w.print(); w.close(); }, 500)
-    } else toast('Pop-ups bloqueados', 'error')
+    downloadComandasPDF([p], config)
     setActiveSheet(null)
   }
 
-  function descargarFacturaPDF(p, mps=[], total=0, cambio=0) {
-    try {
-      const items = typeof p.items === 'string' ? JSON.parse(p.items || '[]') : (p.items || [])
-      const height = 100 + (items.length * 8)
-      const doc = new jsPDF({ unit: 'mm', format: [80, height] })
-      
-      doc.setFont("helvetica", "bold")
-      doc.setFontSize(14)
-      doc.text("FACTURA DE VENTA", 40, 10, { align: "center" })
-      
-      doc.setFont("helvetica", "normal")
-      doc.setFontSize(9)
-      doc.text(`Orden: #${p.numero_pedido || 'S/N'}`, 5, 20)
-      doc.text(`Fecha: ${new Date(p.created_at || Date.now()).toLocaleString('es-CO')}`, 5, 24)
-      doc.text(`Cliente: ${p.nombre_cliente || 'N/A'}`, 5, 28)
-      
-      doc.line(5, 31, 75, 31)
-      doc.setFont("helvetica", "bold")
-      doc.text("CANT", 5, 36)
-      doc.text("DESCRIPCION", 18, 36)
-      doc.text("TOTAL", 60, 36)
-      doc.line(5, 38, 75, 38)
-      
-      let y = 43
-      doc.setFont("helvetica", "normal")
-      items.forEach(it => {
-        doc.text(`${it.cantidad}`, 5, y)
-        doc.text((it.nombre_producto||'').substring(0, 17), 15, y)
-        const sub = parseFloat(it.precio_unitario) * parseInt(it.cantidad)
-        doc.text(`$${sub.toLocaleString('es-CO')}`, 60, y)
-        y += 6
-      })
-      
-      doc.line(5, y, 75, y)
-      y += 5
-      
-      doc.setFont("helvetica", "bold")
-      doc.text(`TOTAL A PAGAR: $${parseFloat(total||0).toLocaleString('es-CO')}`, 5, y)
-      y += 6
-      
-      if (mps && mps.length) {
-        doc.setFont("helvetica", "normal")
-        mps.forEach(m => {
-          doc.text(`PAGO (${m.nombre}): $${parseFloat(m.monto||0).toLocaleString('es-CO')}`, 5, y)
-          y += 5
-        })
-        if (cambio > 0) {
-          doc.text(`CAMBIO: $${parseFloat(cambio||0).toLocaleString('es-CO')}`, 5, y)
-          y += 5
-        }
-      }
-      
-      doc.setFont("helvetica", "normal")
-      doc.text("¡Gracias por su compra!", 40, y + 5, { align: "center" })
-      doc.save(`Factura_Orden_${p.numero_pedido}.pdf`)
-    } catch (e) { toast('Error generando PDF', 'error') }
+  function descargarFacturaPDFWrapper(p, mps=[], total=0, cambio=0) {
+    downloadFacturaPDF(p, mps, total, cambio, config)
   }
 
   // ==== ACCIONES DE ESTADO ====
@@ -306,8 +202,8 @@ export default function MobilePedidosAdmin() {
         total,
       })
       
-      // Auto-generar PDF de la factura si lo desean (en mobile a veces es molesto auto-descargar, lo dejamos manual u opcional, pero aquí generamos por compatibilidad)
-      descargarFacturaPDF(selPedido, mpsConTipo, total, pagado - total)
+      // Auto-generar PDF de la factura si lo desean
+      descargarFacturaPDFWrapper(selPedido, mpsConTipo, total, pagado - total)
       
       await api.cambiarEstado(selPedido.id, 'liquidado')
       toast(`Liquidado con éxito. (Folio: ${res.data?.folio || ''})`, 'success', 4000)
@@ -444,7 +340,7 @@ export default function MobilePedidosAdmin() {
                 <button className="btn btn-ghost" style={{ justifyContent: 'flex-start', background: '#f8fafc' }} onClick={() => imprimirFactura(selPedido)}>
                   🖨️ Imprimir Factura (Ticket)
                 </button>
-                <button className="btn btn-ghost" style={{ justifyContent: 'flex-start', background: '#f8fafc' }} onClick={() => descargarFacturaPDF(selPedido, [], selPedido.total, 0)}>
+                <button className="btn btn-ghost" style={{ justifyContent: 'flex-start', background: '#f8fafc' }} onClick={() => descargarFacturaPDFWrapper(selPedido, [], selPedido.total, 0)}>
                   📄 Descargar Factura (PDF)
                 </button>
 

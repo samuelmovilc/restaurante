@@ -4,6 +4,7 @@ import { jsPDF } from 'jspdf'
 import 'jspdf-autotable'
 import { api, fmt, fmtF } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
+import { downloadCuadrePDF } from '../../lib/pdfHelpers'
 
 export default function CajaAdmin() {
   const { toast, ToastContainer } = useToast()
@@ -220,73 +221,7 @@ export default function CajaAdmin() {
 
   // ================= IMPRIMIR TIRILLA =================
   function imprimirCuadre(h) {
-    let html = `
-      <html>
-        <head>
-          <style>
-            @media print { 
-              @page { margin: 0; } 
-              body { margin: 10px; } 
-            }
-            body { font-family: 'Courier New', Courier, monospace; width: 300px; margin: 0 auto; padding: 20px 10px; color: #000; }
-            h1 { text-align: center; font-size: 20px; margin: 0 0 5px 0; font-family: sans-serif; text-transform: uppercase; font-weight: 900; }
-            .subtitle { text-align: center; font-size: 13px; margin-bottom: 20px; font-family: sans-serif; font-weight: bold; letter-spacing: 1px; }
-            .info { font-size: 12px; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-            .info div { margin-bottom: 4px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 15px; }
-            th { text-align: left; border-bottom: 1px dashed #000; padding-bottom: 6px; text-transform: uppercase; }
-            td { padding: 6px 0; vertical-align: top; }
-            .price { text-align: right; width: 100px; }
-            .totals { font-size: 13px; font-weight: bold; border-top: 1px dashed #000; padding-top: 10px; margin-bottom: 20px; }
-            .totals div { display: flex; justify-content: space-between; margin-bottom: 5px; }
-            .totals .grand-total { font-size: 18px; margin-top: 10px; padding-top: 10px; border-top: 2px solid #000; font-family: sans-serif; font-weight: 900; }
-            .footer { text-align: center; font-size: 12px; margin-top: 30px; font-family: sans-serif; font-weight: 600; }
-          </style>
-        </head>
-        <body>
-          <h1>Cuadre de Caja</h1>
-          <div class="subtitle">Turno #${h.id}</div>
-          <div class="info">
-            <div><b>Apertura:</b> ${new Date(h.fecha_apertura).toLocaleString('es-CO')}</div>
-            <div><b>Cierre:</b> ${h.fecha_cierre ? new Date(h.fecha_cierre).toLocaleString('es-CO') : 'En curso'}</div>
-            <div><b>Usuario Apertura:</b> ${h.usuario_apertura || '—'}</div>
-            <div><b>Usuario Cierre:</b> ${h.usuario_cierre || '—'}</div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Concepto</th>
-                <th class="price">Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Saldo Inicial</td>
-                <td class="price">${fmt(h.saldo_inicial)}</td>
-              </tr>
-              <tr>
-                <td>Ingresos (Ventas)</td>
-                <td class="price">${fmt(h.ingresos)}</td>
-              </tr>
-              <tr>
-                <td>Gastos</td>
-                <td class="price" style="color: red;">-${fmt(h.gastos)}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="totals">
-            <div class="grand-total"><span>SALDO FINAL</span><span>${fmt(h.saldo_final_calculado)}</span></div>
-          </div>
-          <div class="footer">
-            Sistema de Caja - Pollo POS
-          </div>
-        </body>
-      </html>
-    `
-    const w = window.open('', '_blank', 'width=400,height=600')
-    w.document.write(html)
-    w.document.close()
-    setTimeout(() => { w.print(); w.close(); }, 500)
+    downloadCuadrePDF(h, {})
   }
 
   // ================= UTILS =================
